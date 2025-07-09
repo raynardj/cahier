@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: The Art of Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Slate, Zinc) with a soft Amber accent. -->
+    <!-- Application Structure Plan: A single-page application with a top navigation bar that controls which content section is visible. This modular, tab-like structure allows users to focus on one topic at a time (e.g., Definitions, Careers, Leaders) rather than being overwhelmed by a long-scrolling page. The flow is designed for non-linear exploration: a user can jump directly to the celebrity case studies if they wish, or systematically move from definitions to practical applications. This structure was chosen for its clarity, focus, and ability to house distinct interactive elements (like the career filter and the leader-specific radar charts) in self-contained, logical modules, enhancing usability over a simple text document. -->
+    <!-- Visualization & Content Choices: 1. Core Concepts: Report text on definitions and qualities is presented in side-by-side animated panels for direct comparison. Accordion-style interactions are used to reveal details on demand, reducing initial cognitive load. Goal: Inform/Compare. Method: HTML/CSS/JS. 2. Career Paths: The report's list of jobs is converted into an interactive, filterable grid of cards. Goal: Organize/Guide. Interaction: Users click filters ('Upward', 'Downward', 'Balanced') to instantly see relevant roles. Justification: More engaging and user-directed than a static table. Method: HTML/CSS/JS. 3. Celebrity Leaders: The dense text analysis is synthesized into a dynamic profile view with a radar chart as the centerpiece. Goal: Compare/Analyze. Interaction: Selecting a leader updates the chart and text. Justification: The radar chart provides a powerful, at-a-glance comparison of complex leadership styles, which is more impactful than text alone. Library: Chart.js (Canvas). 4. Recommendations: Presented as clear checklists for easy consumption. Goal: Inform/Action. Method: HTML/CSS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-button { transition: all 0.3s ease; }
+        .nav-button.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+        .nav-button:not(.active) { border-bottom-color: transparent; }
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .quality-item .details { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
+        .quality-item.open .details { max-height: 500px; }
+        .career-card { transition: transform 0.3s ease, opacity 0.3s ease; }
+        .chart-container { position: relative; width: 100%; max-width: 500px; margin: 1rem auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">The Art of Management</h1>
+            <p class="mt-3 text-lg text-slate-600 max-w-3xl mx-auto">An interactive exploration of the two critical directions of leadership: managing up and managing down.</p>
+        </header>
+
+        <nav class="sticky top-0 bg-slate-50/80 backdrop-blur-sm z-10 mb-8 border-b border-slate-200">
+            <div class="flex justify-center items-center space-x-4 sm:space-x-8 text-sm sm:text-base font-medium text-slate-500">
+                <button class="nav-button active py-4 px-2 border-b-2" onclick="showSection('intro')">Introduction</button>
+                <button class="nav-button py-4 px-2 border-b-2" onclick="showSection('qualities')">The Two Directions</button>
+                <button class="nav-button py-4 px-2 border-b-2" onclick="showSection('careers')">Career Pathways</button>
+                <button class="nav-button py-4 px-2 border-b-2" onclick="showSection('leaders')">Leaders in Action</button>
+                <button class="nav-button py-4 px-2 border-b-2" onclick="showSection('skills')">Develop Your Skills</button>
+            </div>
+        </nav>
+
+        <main>
+            <section id="intro" class="content-section active">
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">Deconstructing Management</h2>
+                     <div class="prose max-w-none text-slate-600 space-y-4">
+                        <p>Effective management within any organization requires navigating relationships both with superiors and with direct reports. This dual responsibility is captured by the concepts of <strong>upward management</strong> (influencing those above you) and <strong>downward management</strong> (leading those below you). These are not mutually exclusive skills; they are two sides of the same leadership coin.</p>
+                        <p>This interactive guide delves into the qualities that define excellence in each direction, identifies careers where these skills are paramount, and examines real-world examples through the leadership styles of prominent figures. The goal is to understand that the most impactful leaders are not just good at giving orders or good at taking them—they are skilled at building alliances, fostering trust, and driving success across all levels of an organization. Use the navigation above to explore each facet of this essential leadership dynamic.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="qualities" class="content-section">
+                <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold text-slate-900">The Two Directions of Management</h2>
+                     <p class="mt-2 text-slate-600 max-w-2xl mx-auto">While intertwined, upward and downward management are defined by distinct qualities and approaches. Explore the core attributes of each below.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-2xl font-bold text-amber-600 mb-4">Upward Management</h3>
+                        <p class="text-slate-600 mb-6">Strategically influencing superiors to foster mutual success and achieve optimal results for yourself, your boss, and the organization.</p>
+                        <div id="upward-qualities" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-2xl font-bold text-sky-600 mb-4">Downward Management</h3>
+                        <p class="text-slate-600 mb-6">Leading, empowering, and developing direct reports to build a high-performing, motivated, and resilient team.</p>
+                        <div id="downward-qualities" class="space-y-3"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="careers" class="content-section">
+                 <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold text-slate-900">Career Pathways</h2>
+                     <p class="mt-2 text-slate-600 max-w-2xl mx-auto">Certain roles lean more heavily on one management style. Filter the career paths below to see where each skill set is most critical.</p>
+                </div>
+                <div class="flex justify-center space-x-2 mb-8">
+                    <button class="career-filter-btn active" onclick="filterCareers('all', event)">All</button>
+                    <button class="career-filter-btn" onclick="filterCareers('upward', event)">Upward-Focused</button>
+                    <button class="career-filter-btn" onclick="filterCareers('downward', event)">Downward-Focused</button>
+                    <button class="career-filter-btn" onclick="filterCareers('balanced', event)">Balanced</button>
+                </div>
+                <div id="career-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            </section>
+
+            <section id="leaders" class="content-section">
+                <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold text-slate-900">Leaders in Action</h2>
+                     <p class="mt-2 text-slate-600 max-w-2xl mx-auto">Explore the nuanced management styles of prominent figures. Select a leader to see a visual breakdown of their approach and key actions.</p>
+                </div>
+                <div class="flex justify-center flex-wrap gap-4 mb-8">
+                    <div id="leader-selector" class="flex justify-center flex-wrap gap-x-6 gap-y-4"></div>
+                </div>
+                <div id="leader-profile" class="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-100 grid md:grid-cols-2 gap-8 items-center">
+                    <div class="text-center md:text-left">
+                        <h3 id="leader-name" class="text-3xl font-bold text-slate-900"></h3>
+                        <p id="leader-title" class="text-amber-600 font-medium text-lg mt-1"></p>
+                        <div id="leader-desc" class="mt-4 space-y-4 text-slate-600"></div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="leader-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="content-section">
+                 <div class="text-center mb-8">
+                     <h2 class="text-3xl font-bold text-slate-900">Develop Your Skills</h2>
+                     <p class="mt-2 text-slate-600 max-w-2xl mx-auto">Cultivating both management skills is crucial for long-term success. Here are actionable recommendations to enhance your abilities.</p>
+                </div>
+                 <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-2xl font-bold text-amber-600 mb-4">Developing Upward Management</h3>
+                        <ul id="upward-skills" class="space-y-3 list-none text-slate-600"></ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <h3 class="text-2xl font-bold text-sky-600 mb-4">Developing Downward Management</h3>
+                        <ul id="downward-skills" class="space-y-3 list-none text-slate-600"></ul>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<script>
+    const data = {
+        qualities: {
+            upward: [
+                { title: "Empathetic Understanding", details: "Proactively comprehending a manager's communication style, decision-making preferences, priorities, and goals. This transforms you into a strategic partner capable of anticipating needs." },
+                { title: "Proactive Communication", details: "Communicating early and often, providing concise updates on progress, roadblocks, and proposed solutions. This builds credibility and positions you as a reliable, strategic partner." },
+                { title: "Trust Building & Reliability", details: "Demonstrating honesty, transparency, and consistent delivery of high-quality work, while being open to feedback. This establishes a foundation of confidence." },
+                { title: "Strategic Alignment", details: "Aligning personal and team efforts with the manager's and organizational objectives. This ensures your contributions are recognized as valuable." },
+                { title: "Initiative & Self-Management", details: "Going beyond assigned tasks and demonstrating capability without constant direction. This reduces your manager's workload and shows leadership potential." }
+            ],
+            downward: [
+                { title: "Empathetic Leadership", details: "Leading with genuine understanding of team members' perspectives, prioritizing their well-being, and actively listening to concerns. This fosters trust and boosts morale." },
+                { title: "Transparent Communication", details: "Establishing clear expectations and consistently explaining the rationale behind decisions. This builds understanding and enhances psychological safety." },
+                { title: "Team Empowerment & Development", details: "Delegating ownership, offering mentorship, and investing in professional growth. This cultivates a more resilient, capable, and innovative team." },
+                { title: "Recognition & Motivation", details: "Creating positive feedback loops and celebrating successes. This boosts morale, enhances motivation, and fosters loyalty, unlike fear-based tactics." },
+                { title: "Advocacy", details: "Representing and amplifying team needs and concerns to higher leadership, addressing issues like understaffing or burnout. This shows your commitment to their well-being." }
+            ]
+        },
+        careers: [
+            { name: "HR Executive/Leader", type: "upward", desc: "Requires strategic alignment with the C-suite on people strategy and demonstrating ROI." },
+            { name: "CFO / CIO", type: "upward", desc: "Involves influencing executive decisions on major financial and technological investments." },
+            { name: "Management Consultant", type: "upward", desc: "Success depends on influencing client decision-makers at all levels to adopt recommendations." },
+            { name: "Senior Product/Eng. IC", type: "upward", desc: "Crucial for influencing leadership to secure resources and support for key projects." },
+            { name: "Team Leader/Supervisor", type: "downward", desc: "Direct responsibility for team performance, morale, training, and day-to-day task implementation." },
+            { name: "Project Manager", type: "downward", desc: "Focuses on guiding teams, managing schedules, mitigating risks, and ensuring project deadlines are met." },
+            { name: "Human Resources Manager", type: "downward", desc: "Centers on hiring, retaining talent, managing employee relations, and fostering a positive workplace culture." },
+            { name: "Sales Manager", type: "downward", desc: "Responsible for motivating sales teams, setting goals, and developing staff to hit targets." },
+            { name: "Middle Manager", type: "balanced", desc: "Translates high-level strategy for teams (downward) while reporting progress and needs to executives (upward)." },
+            { name: "Nonprofit Executive Director", type: "balanced", desc: "Leads internal teams toward a mission (downward) while managing boards and donors (upward)." }
+        ],
+        leaders: [
+            {
+                id: "jobs",
+                name: "Steve Jobs",
+                title: "The Perfectionist Visionary",
+                chartData: [4, 2, 5, 2, 5], 
+                desc: [
+                    "<strong>Upward:</strong> Strategically secured a $150M investment from rival Microsoft and re-priced stock options to retain top talent, convincing a reluctant board of his turnaround vision.",
+                    "<strong>Downward:</strong> Famously autocratic and demanding. Set incredibly high standards, demanded long hours, and abruptly cut 70% of products to enforce a ruthless focus on quality and simplicity."
+                ]
+            },
+            {
+                id: "winfrey",
+                name: "Oprah Winfrey",
+                title: "The Empathetic Empire-Builder",
+                chartData: [4, 5, 3, 5, 4],
+                desc: [
+                    "<strong>Upward:</strong> Astutely negotiated joint ventures for her media networks (e.g., OWN with Discovery), insisting on creative control and maintaining her CEO role even as partnerships evolved.",
+                    "<strong>Downward:</strong> A transformational and authentic leader. Invested deeply in her staff's growth, provided tailored development, and famously took her entire team and their families on vacation."
+                ]
+            },
+            {
+                id: "musk",
+                name: "Elon Musk",
+                title: "The Audacious Micromanager",
+                chartData: [5, 2, 5, 1, 4],
+                desc: [
+                    "<strong>Upward:</strong> Attracts massive investment by articulating an audacious, world-changing vision for his companies. Maintains control through significant personal ownership stakes.",
+                    "<strong>Downward:</strong> Sets seemingly impossible goals and pushes extreme work hours. His intense, nanomanaging style drives innovation but can lead to high burnout and employee turnover."
+                ]
+            },
+            {
+                id: "bezos",
+                name: "Jeff Bezos",
+                title: "The Long-Term Executioner",
+                chartData: [5, 3, 5, 2, 5],
+                desc: [
+                    "<strong>Upward:</strong> Masterfully managed investor expectations by consistently selling a long-term vision over short-term profits, building unshakable credibility even during unprofitable years.",
+                    "<strong>Downward:</strong> Autocratic and data-obsessed. Known for high expectations, blunt feedback, and a demanding, fast-paced culture centered on a relentless obsession with the customer."
+                ]
+            },
+            {
+                id: "merkel",
+                name: "Angela Merkel",
+                title: "The Consensus-Driven Diplomat",
+                chartData: [3, 4, 3, 5, 5],
+                desc: [
+                    "<strong>Upward:</strong> Wielded immense influence in the EU not through dominance, but through reason, cooperation, and building consensus to broker major agreements and recovery funds.",
+                    "<strong>Downward:</strong> Masterfully balanced diverse factions within her party and government coalitions, maintaining stability through a pragmatic, methodical, and consensus-driven approach."
+                ]
+            }
+        ],
+        skills: {
+            upward: [
+                { icon: '🧠', text: '<strong>Understand Your Manager:</strong> Proactively learn their priorities, challenges, and communication style.' },
+                { icon: '📈', text: '<strong>Communicate Strategically:</strong> Tailor messages, focus on results, and always propose solutions with problems.' },
+                { icon: '🤝', text: '<strong>Build Trust:</strong> Deliver high-quality work consistently and be open and honest in all interactions.' },
+                { icon: '🚀', text: '<strong>Take Initiative:</strong> Go beyond your assigned tasks to demonstrate your value and leadership potential.' }
+            ],
+            downward: [
+                { icon: '❤️', text: '<strong>Cultivate Empathy:</strong> Prioritize understanding your team\'s perspectives and listen genuinely to their concerns.' },
+                { icon: '📢', text: '<strong>Communicate Clearly:</strong> Set clear expectations and always explain the "why" behind your decisions.' },
+                { icon: '🌱', text: '<strong>Empower and Develop:</strong> Delegate ownership, offer mentorship, and invest in your team\'s professional growth.' },
+                { icon: '🏆', text: '<strong>Recognize and Motivate:</strong> Celebrate wins, give positive feedback, and make your team feel valued.' }
+            ]
+        }
+    };
+    
+    let leaderChart;
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        document.getElementById(sectionId).classList.add('active');
+
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.classList.remove('active');
+            if (button.getAttribute('onclick').includes(sectionId)) {
+                button.classList.add('active');
+            }
+        });
+    }
+
+    function createQualityItems() {
+        const upwardContainer = document.getElementById('upward-qualities');
+        const downwardContainer = document.getElementById('downward-qualities');
+        
+        data.qualities.upward.forEach(item => {
+            upwardContainer.innerHTML += `
+                <div class="quality-item border-b border-slate-200 py-3">
+                    <button class="w-full text-left flex justify-between items-center" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="font-semibold text-slate-800">${item.title}</span>
+                        <span class="text-amber-600 transform transition-transform duration-300">&#9662;</span>
+                    </button>
+                    <div class="details pt-2 text-slate-600">
+                        <p>${item.details}</p>
+                    </div>
+                </div>`;
+        });
+        data.qualities.downward.forEach(item => {
+            downwardContainer.innerHTML += `
+                <div class="quality-item border-b border-slate-200 py-3">
+                    <button class="w-full text-left flex justify-between items-center" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="font-semibold text-slate-800">${item.title}</span>
+                         <span class="text-sky-600 transform transition-transform duration-300">&#9662;</span>
+                    </button>
+                    <div class="details pt-2 text-slate-600">
+                        <p>${item.details}</p>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function createCareerCards() {
+        const grid = document.getElementById('career-grid');
+        grid.innerHTML = '';
+        data.careers.forEach(career => {
+            let borderColor = 'border-slate-300';
+            if(career.type === 'upward') borderColor = 'border-amber-500';
+            if(career.type === 'downward') borderColor = 'border-sky-500';
+            if(career.type === 'balanced') borderColor = 'border-green-500';
+
+            grid.innerHTML += `
+                <div class="career-card bg-white p-5 rounded-lg shadow-sm border-t-4 ${borderColor}" data-type="${career.type}">
+                    <h4 class="font-bold text-slate-900 text-lg">${career.name}</h4>
+                    <p class="text-slate-600 text-sm mt-2">${career.desc}</p>
+                </div>
+            `;
+        });
+        
+        document.querySelectorAll('.career-filter-btn').forEach(btn => {
+            btn.style.cssText = `
+                padding: 0.5rem 1rem;
+                border-radius: 9999px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                background-color: #f1f5f9;
+                color: #475569;
+            `;
+        });
+         // The 'All' button is active by default, apply its styles directly
+         document.querySelector('.career-filter-btn.active').style.cssText += `
+            background-color: #1e293b;
+            color: #ffffff;
+        `;
+    }
+
+    function filterCareers(type, event) { // Added event parameter
+        document.querySelectorAll('.career-card').forEach(card => {
+            if (type === 'all' || card.dataset.type === type) {
+                card.style.display = 'block';
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1)';
+            } else {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                setTimeout(() => card.style.display = 'none', 300);
+            }
+        });
+        document.querySelectorAll('.career-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+             btn.style.backgroundColor = '#f1f5f9';
+             btn.style.color = '#475569';
+        });
+
+        // Determine the active button based on whether an event was passed
+        let activeBtn;
+        if (event && event.target) {
+            activeBtn = event.target;
+        } else {
+            // If no event (e.g., called from window.onload), find the 'All' button
+            activeBtn = document.querySelector(`.career-filter-btn[onclick*="filterCareers('${type}')"]`);
+        }
+        
+        if (activeBtn) { // Ensure activeBtn is not null before trying to add classes
+            activeBtn.classList.add('active');
+            activeBtn.style.backgroundColor = '#1e293b';
+            activeBtn.style.color = '#ffffff';
+        }
+    }
+    
+    function createLeaderSelector() {
+        const selector = document.getElementById('leader-selector');
+        data.leaders.forEach(leader => {
+            selector.innerHTML += `
+                <button id="btn-${leader.id}" class="leader-btn text-slate-600 font-medium py-2 px-4 rounded-full transition-colors duration-300 hover:bg-slate-200" onclick="selectLeader('${leader.id}')">${leader.name}</button>
+            `;
+        });
+    }
+
+    function selectLeader(leaderId) {
+        const leader = data.leaders.find(l => l.id === leaderId);
+        if (!leader) return;
+
+        document.getElementById('leader-name').textContent = leader.name;
+        document.getElementById('leader-title').textContent = leader.title;
+        
+        const descContainer = document.getElementById('leader-desc');
+        descContainer.innerHTML = '';
+        leader.desc.forEach(p => {
+            const pElem = document.createElement('p');
+            pElem.innerHTML = p;
+            descContainer.appendChild(pElem);
+        });
+        
+        updateLeaderChart(leader.name, leader.chartData);
+        
+        document.querySelectorAll('.leader-btn').forEach(btn => {
+            btn.classList.remove('bg-slate-900', 'text-white');
+            btn.classList.add('text-slate-600');
+        });
+        document.getElementById(`btn-${leader.id}`).classList.add('bg-slate-900', 'text-white');
+        document.getElementById(`btn-${leader.id}`).classList.remove('text-slate-600');
+    }
+
+    function initLeaderChart() {
+        const ctx = document.getElementById('leader-chart').getContext('2d');
+        leaderChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Vision', 'Empathy', 'Demands', 'Collaboration', 'Upward Influence'],
+                datasets: [{
+                    label: '',
+                    data: [],
+                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                    borderColor: 'rgba(245, 158, 11, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(245, 158, 11, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(245, 158, 11, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: {
+                             font: { size: 12, weight: '500' },
+                             color: '#475569'
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            stepSize: 1,
+                            font: { size: 10 }
+                        },
+                        min: 0,
+                        max: 5
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateLeaderChart(name, chartData) {
+        leaderChart.data.datasets[0].label = name;
+        leaderChart.data.datasets[0].data = chartData;
+        leaderChart.update();
+    }
+    
+    function createSkillLists() {
+        const upwardList = document.getElementById('upward-skills');
+        const downwardList = document.getElementById('downward-skills');
+        data.skills.upward.forEach(skill => {
+            upwardList.innerHTML += `
+                <li class="flex items-start">
+                    <span class="text-xl mr-3 mt-1">${skill.icon}</span>
+                    <span>${skill.text}</span>
+                </li>
+            `;
+        });
+        data.skills.downward.forEach(skill => {
+            downwardList.innerHTML += `
+                <li class="flex items-start">
+                    <span class="text-xl mr-3 mt-1">${skill.icon}</span>
+                    <span>${skill.text}</span>
+                </li>
+            `;
+        });
+    }
+
+
+    window.onload = function() {
+        createQualityItems();
+        createCareerCards();
+        filterCareers('all'); // Call filterCareers without an event object
+        createLeaderSelector();
+        initLeaderChart();
+        selectLeader('jobs');
+        createSkillLists();
+    };
+</script>
+
+</body>
+</html>
