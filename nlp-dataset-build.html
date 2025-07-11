@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Datasets with LLMs: An Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA is designed as a modular, single-page journey, breaking the dense report into thematic, explorable sections. A persistent top navigation allows users to jump between key pillars of the methodology: The 'Why' (Strategy), 'How' (Workflow), 'Art' (Prompting), 'Structure' (Taxonomy), 'Toolkit' (Tools), and 'Proof' (Quality). This non-linear structure enhances usability by allowing users to focus on areas of interest. It transforms passive reading into an active learning experience through interactive diagrams, tabbed content, and data visualizations, making the complex process more intuitive and memorable than a linear document. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Synthetic Data vs. Augmentation -> Goal: Compare -> Viz: HTML Table -> Interaction: Static -> Justification: Clear, direct comparison.
+        - Report Info: Generation Workflow -> Goal: Organize -> Viz: Interactive HTML/CSS Diagram -> Interaction: Click steps to reveal details -> Justification: Visualizes a process, making it easier to follow.
+        - Report Info: Prompt Engineering Strategies -> Goal: Inform/Engage -> Viz: Tabbed Interface -> Interaction: Switch tabs to see different prompt examples -> Justification: Active engagement with core concepts.
+        - Report Info: Intent Taxonomy -> Goal: Organize -> Viz: Collapsible HTML List Tree -> Interaction: Expand/collapse categories -> Justification: Mirrors the hierarchical data structure.
+        - Report Info: Data Blend Impact -> Goal: Show Relationship -> Viz: Chart.js Line Chart -> Interaction: Hover tooltips -> Justification: Best way to show performance correlation.
+        - Report Info: Open Source Tools -> Goal: Organize/Inform -> Viz: Grid of Cards -> Interaction: Static -> Justification: Scannable and visually organized.
+        - Library/Method: Vanilla JS for all interactions, Chart.js for the chart. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F7F4; color: #1f2937; }
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link.active, .nav-link:hover { color: #111827; border-bottom-color: #4A5568; }
+        .section-card { background-color: #FFFFFF; border: 1px solid #EAE7E0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .tab-button.active { background-color: #4A5568; color: white; }
+        .tree ul { margin-left: 1.5rem; border-left: 1px dashed #cbd5e1; }
+        .tree li { position: relative; }
+        .tree li::before { content: ''; position: absolute; top: 0.75rem; left: -1.5rem; width: 1.25rem; height: 1px; background-color: #cbd5e1; }
+        .tree .toggle { cursor: pointer; }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4A5568;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200">
+        <nav class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <h1 class="text-xl font-bold text-gray-800">Synthetic Data Guide</h1>
+                <div class="hidden md:flex items-center space-x-6 text-gray-500">
+                    <a href="#strategy" class="nav-link border-b-2 border-transparent pb-1">Strategy</a>
+                    <a href="#workflow" class="nav-link border-b-2 border-transparent pb-1">Workflow</a>
+                    <a href="#prompting" class="nav-link border-b-2 border-transparent pb-1">Prompting</a>
+                    <a href="#taxonomy" class="nav-link border-b-2 border-transparent pb-1">Taxonomy</a>
+                    <a href="#tools" class="nav-link border-b-2 border-transparent pb-1">Toolkit</a>
+                    <a href="#quality" class="nav-link border-b-2 border-transparent pb-1">Quality</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8 space-y-16">
+
+        <section id="strategy" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">The Strategic Advantage</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Why use LLMs to create synthetic data for training smaller, efficient models?</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <div class="section-card p-6 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-3">Addressing Core Challenges</h3>
+                    <p class="text-gray-700 space-y-4">
+                        <span>Manually creating large, labeled datasets is a major bottleneck in ML. Synthetic data generation addresses this by overcoming:</span>
+                        <ul class="list-disc list-inside space-y-2 pt-2">
+                            <li><strong class="font-medium">Data Scarcity:</strong> Generate vast amounts of data for niche scenarios that are rare in the real world.</li>
+                            <li><strong class="font-medium">Prohibitive Cost:</strong> Dramatically reduce the time and expense associated with manual human labeling.</li>
+                            <li><strong class="font-medium">Privacy & Compliance:</strong> Create data that is inherently free of Personally Identifiable Information (PII), ideal for regulated industries like finance and healthcare.</li>
+                        </ul>
+                    </p>
+                </div>
+                <div class="section-card p-6 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-3">Synthetic Data vs. Data Augmentation</h3>
+                    <p class="text-gray-600 mb-4">It's crucial to distinguish between creating new data and simply modifying existing data. Both are useful, but for different purposes.</p>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="py-2 font-medium">Feature</th>
+                                <th class="py-2 font-medium">Data Augmentation</th>
+                                <th class="py-2 font-medium">Synthetic Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3">Method</td>
+                                <td class="py-3 text-gray-700">Modifies existing data</td>
+                                <td class="py-3 text-gray-700">Creates new data</td>
+                            </tr>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3">Goal</td>
+                                <td class="py-3 text-gray-700">Increase robustness</td>
+                                <td class="py-3 text-gray-700">Increase diversity & scale</td>
+                            </tr>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3">Use Case</td>
+                                <td class="py-3 text-gray-700">Sufficient real data exists</td>
+                                <td class="py-3 text-gray-700">Real data is scarce or private</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3">Diversity</td>
+                                <td class="py-3 text-center text-xl">✔️</td>
+                                <td class="py-3 text-center text-xl">✅</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="workflow" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">The Generation Workflow</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">A step-by-step process for turning source knowledge into a high-quality synthetic dataset. Click each step for details.</p>
+            </div>
+            <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 mb-8" id="workflow-diagram">
+            </div>
+            <div id="workflow-details" class="section-card p-6 rounded-lg min-h-[150px] transition-all duration-300">
+            </div>
+        </section>
+
+        <section id="prompting" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">The Art of Prompt Engineering</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Mastering prompts is the key to generating diverse, high-quality conversational data.</p>
+            </div>
+            <div>
+                <div class="flex flex-wrap justify-center gap-2 mb-6 border-b border-gray-200" id="prompt-tabs">
+                </div>
+                <div id="prompt-content" class="section-card p-6 rounded-lg mb-8">
+                </div>
+
+                <div class="section-card p-6 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-4">✨ Generate a Custom Prompt ✨</h3>
+                    <p class="text-gray-600 mb-4">Describe a scenario, and I'll suggest a system and user prompt for it.</p>
+                    <textarea id="prompt-scenario-input" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800" rows="4" placeholder="e.g., Customer service for a banking app dealing with a fraud inquiry..."></textarea>
+                    <button id="generate-prompt-btn" class="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                        <span id="prompt-spinner" class="loading-spinner mr-2"></span>
+                        Generate Prompt
+                    </button>
+                    <div id="generated-prompt-output" class="mt-6 p-4 bg-gray-100 rounded-md text-gray-800 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="taxonomy" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Taxonomy & Automated Labeling</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">A robust, hierarchical label structure is the backbone of an effective classifier.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-8 items-start">
+                <div class="section-card p-6 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-4">Example Intent Taxonomy</h3>
+                    <p class="text-gray-600 mb-4">A granular, multi-level taxonomy allows for deep insights. Click categories to expand/collapse.</p>
+                    <div id="taxonomy-tree" class="tree text-gray-800"></div>
+                </div>
+                <div class="section-card p-6 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-4">LLM-Powered Labeling Techniques</h3>
+                    <div class="space-y-4 mb-8">
+                        <div>
+                            <h4 class="font-semibold">Zero-Shot Labeling</h4>
+                            <p class="text-gray-600">Classify text without any examples, relying on the LLM's general knowledge. Best for simple, distinct categories.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Few-Shot Labeling</h4>
+                            <p class="text-gray-600">Provide 1-5 examples in the prompt to guide the LLM. Greatly improves accuracy for specific or nuanced tasks.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Human-in-the-Loop (HITL)</h4>
+                            <p class="text-gray-600">The gold standard. Use LLMs for bulk labeling, then have human experts validate and correct predictions, focusing their effort on the most complex cases.</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mb-4">✨ Expand an Intent ✨</h3>
+                    <p class="text-gray-600 mb-4">Enter a broad intent, and I'll suggest more specific sub-intents.</p>
+                    <input type="text" id="expand-intent-input" class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800" placeholder="e.g., Travel, Healthcare, Finance...">
+                    <button id="expand-intent-btn" class="mt-4 px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center">
+                        <span id="intent-spinner" class="loading-spinner mr-2"></span>
+                        Expand Intent
+                    </button>
+                    <div id="expanded-intents-output" class="mt-6 p-4 bg-gray-100 rounded-md text-gray-800"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tools" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">The Open-Source Toolkit</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Leverage powerful and cost-effective open-source tools for your entire data pipeline.</p>
+            </div>
+            <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            </div>
+        </section>
+        
+        <section id="quality" class="scroll-mt-20">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Ensuring Data Quality</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">Generation is not enough. Validating quality and optimizing the data blend is crucial for model performance.</p>
+            </div>
+            <div class="section-card p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4 text-center">Optimizing the Blend of Real & Synthetic Data</h3>
+                <p class="text-gray-600 mb-6 text-center max-w-2xl mx-auto">The best performance comes from a hybrid approach. Synthetic data augments, but doesn't fully replace, a small seed of real data. Over-saturating with synthetic data can introduce redundancy and harm performance.</p>
+                <div class="chart-container">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto p-8 text-center">
+            <p>This interactive guide demonstrates key concepts from the report on generating synthetic datasets with LLMs.</p>
+            <p class="text-sm text-gray-400 mt-2">Built with Tailwind CSS and Chart.js.</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const appData = {
+        workflow: [
+            { id: 'chunking', name: '1. Document Chunking', description: "Large source documents (e.g., knowledge bases, sales playbooks) are divided into smaller, semantically meaningful 'chunks'. This is vital for managing LLM token limits and preserving context." },
+            { id: 'context', name: '2. Context Generation', description: 'For a given chunk, semantically related chunks are identified using similarity algorithms. This grouping creates a rich, nuanced context for the LLM to draw from.' },
+            { id: 'query', name: '3. Query Generation', description: 'An LLM uses the generated context to create synthetic user queries or tasks. This effectively reverses the typical Retrieval Augmented Generation (RAG) process.' },
+            { id: 'evolution', name: '4. Data Evolution', description: 'Existing queries are iteratively enhanced through more complex prompts to increase depth and breadth, while low-quality queries are eliminated. This is a "survival-of-the-fittest" process for data.' },
+            { id: 'output', name: '5. Output Generation', description: 'Optionally, the LLM generates the expected output or label for each evolved query. This greatly simplifies the subsequent human validation and labeling effort.' }
+        ],
+        prompts: [
+            { name: 'Role-Playing', content: { title: 'Role-Playing & Personas', description: 'Assigning a specific persona to the LLM to guide its tone, style, and behavior. This is essential for simulating realistic interactions.', example: `<div class="bg-gray-800 rounded-md p-4 text-sm font-mono text-gray-300"><span class="text-purple-400">System Prompt:</span> You are an empathetic customer service agent for a tech company. Your goal is to patiently help users solve their problems.<br><br><span class="text-green-400">User:</span> "My new laptop won't turn on!"</div>` } },
+            { name: 'Few-Shot Examples', content: { title: 'Few-Shot Prompting', description: 'Providing 1-5 examples of the desired input/output format within the prompt itself. This dramatically improves the accuracy and consistency of the LLM\'s output for specific tasks.', example: `<div class="bg-gray-800 rounded-md p-4 text-sm font-mono text-gray-300"><span class="text-green-400">Customer:</span> "Where's my order?" <span class="text-blue-400">Label:</span> "Order Status"<br><span class="text-green-400">Customer:</span> "How do I reset my password?" <span class="text-blue-400">Label:</span> "Password Reset"<br><br><span class="text-green-400">Customer:</span> "Your website is broken." <span class="text-blue-400">Label:</span> ...</div>` } },
+            { name: 'Context Injection', content: { title: 'Context Injection', description: 'Directly providing key details about the industry, product, or scenario in the prompt to ensure the generated conversation is relevant and specific.', example: `<div class="bg-gray-800 rounded-md p-4 text-sm font-mono text-gray-300"><span class="text-purple-400">Generate a sales conversation for a...</span><br><span class="text-blue-400">Product:</span> "SaaS CRM Software"<br><span class="text-blue-400">Industry:</span> "Healthcare"<br><span class="text-blue-400">Scenario:</span> "Customer is concerned about data privacy compliance."</div>` } },
+            { name: 'Structured Output', content: { title: 'Structured Output', description: 'Instructing the LLM to return its response in a machine-readable format like JSON. This is crucial for making the generated data immediately usable in a training pipeline.', example: `<div class="bg-gray-800 rounded-md p-4 text-sm font-mono text-gray-300"><span class="text-purple-400">Generate a dialogue and output it as a JSON object with 'conversation' and 'label' keys.</span><br><br><span class="text-yellow-300">{<br>  "conversation": "...",<br>  "label": "Technical Support"<br>}</span></div>` } }
+        ],
+        taxonomy: {
+            name: 'All Intents',
+            children: [
+                { name: 'Informational', children: [{name: 'Product Inquiry'}, {name: 'Pricing Details'}, {name: 'Company Info'}] },
+                { name: 'Transactional', children: [{name: 'Order Management', children: [{name: 'Order Status Check'}, {name: 'Cancellation/Refund'}]}, {name: 'Purchase/Booking'}] },
+                { name: 'Support', children: [{name: 'Technical Issue', children: [{name: 'Login Troubleshooting'}, {name: 'Software Bug'}]}, {name: 'Account Management'}] },
+                { name: 'Sales', children: [{name: 'Lead Qualification'}, {name: 'Objection Handling'}] },
+                { name: 'Feedback' },
+                { name: 'Small Talk' }
+            ]
+        },
+        tools: [
+            { name: 'LLaMA 3.1', category: 'LLMs', description: 'Powerful model family for high-quality synthetic data generation.' },
+            { name: 'BLOOM', category: 'LLMs', description: 'Large, open, multilingual model, excellent for diverse text generation.' },
+            { name: 'SDialog', category: 'Simulation', description: 'Python toolkit for persona-driven, multi-agent dialogue simulation.' },
+            { name: 'IntellAgent', category: 'Simulation', description: 'Framework for simulating diverse user interactions and edge cases.' },
+            { name: 'LangChain', category: 'Frameworks', description: 'Popular framework for building LLM apps, useful for chunking and embeddings.' },
+            { name: 'Rasa', category: 'Frameworks', description: 'Open-source platform for building and evaluating conversational AI.' },
+            { name: 'DeepEval', category: 'Labeling/Eval', description: 'LLM evaluation framework with synthetic data generation and quality metrics.' },
+            { name: 'Datasaur', category: 'Labeling/Eval', description: 'Data labeling platform integrating LLM automation with Human-in-the-Loop.' },
+        ],
+        qualityChartData: {
+            labels: ['0% (Real Only)', '25%', '50%', '75%', '90%', '98% (Mostly Synthetic)'],
+            datasets: [{
+                label: 'Model Performance',
+                data: [75, 82, 88, 85, 80, 72],
+                fill: false,
+                borderColor: '#4A5568',
+                backgroundColor: '#4A5568',
+                tension: 0.2,
+                pointRadius: 5,
+                pointHoverRadius: 8
+            }]
+        }
+    };
+
+    const workflowDiagramEl = document.getElementById('workflow-diagram');
+    const workflowDetailsEl = document.getElementById('workflow-details');
+    appData.workflow.forEach((step, index) => {
+        const stepEl = document.createElement('button');
+        stepEl.className = 'workflow-step-btn text-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 hover:border-gray-500 transition-all';
+        stepEl.textContent = step.name;
+        stepEl.dataset.id = step.id;
+        workflowDiagramEl.appendChild(stepEl);
+
+        if (index < appData.workflow.length - 1) {
+            const arrowEl = document.createElement('div');
+            arrowEl.className = 'text-2xl text-gray-400 px-2 transform md:rotate-0 rotate-90';
+            arrowEl.innerHTML = '&#8594;';
+            workflowDiagramEl.appendChild(arrowEl);
+        }
+    });
+
+    workflowDiagramEl.addEventListener('click', (e) => {
+        if (e.target.matches('.workflow-step-btn')) {
+            const stepId = e.target.dataset.id;
+            const stepData = appData.workflow.find(s => s.id === stepId);
+            document.querySelectorAll('.workflow-step-btn').forEach(btn => btn.classList.remove('bg-gray-200', 'border-gray-700'));
+            e.target.classList.add('bg-gray-200', 'border-gray-700');
+            workflowDetailsEl.innerHTML = `
+                <h4 class="text-lg font-semibold mb-2">${stepData.name.substring(3)}</h4>
+                <p class="text-gray-700">${stepData.description}</p>
+            `;
+        }
+    });
+    
+    workflowDiagramEl.querySelector('.workflow-step-btn').click();
+
+    const promptTabsEl = document.getElementById('prompt-tabs');
+    const promptContentEl = document.getElementById('prompt-content');
+    appData.prompts.forEach((prompt, index) => {
+        const tabButton = document.createElement('button');
+        tabButton.className = 'tab-button px-4 py-2 rounded-t-lg text-sm md:text-base font-medium text-gray-600 transition-colors';
+        tabButton.textContent = prompt.name;
+        tabButton.dataset.index = index;
+        promptTabsEl.appendChild(tabButton);
+    });
+
+    promptTabsEl.addEventListener('click', (e) => {
+        if (e.target.matches('.tab-button')) {
+            const index = e.target.dataset.index;
+            const promptData = appData.prompts[index].content;
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            promptContentEl.innerHTML = `
+                <h4 class="text-lg font-semibold mb-2">${promptData.title}</h4>
+                <p class="text-gray-600 mb-4">${promptData.description}</p>
+                <div>${promptData.example}</div>
+            `;
+        }
+    });
+    
+    promptTabsEl.querySelector('.tab-button').click();
+    
+    const taxonomyTreeEl = document.getElementById('taxonomy-tree');
+    function createTree(node, parentEl) {
+        const ul = document.createElement('ul');
+        if (!parentEl.dataset.root) {
+            ul.classList.add('hidden');
+        }
+        parentEl.appendChild(ul);
+
+        node.children.forEach(child => {
+            const li = document.createElement('li');
+            li.className = "mt-2";
+            
+            let content;
+            if (child.children) {
+                content = `<span class="toggle font-medium cursor-pointer hover:text-black">&#9654; ${child.name}</span>`;
+            } else {
+                content = `<span class="font-normal">${child.name}</span>`;
+            }
+            li.innerHTML = content;
+            ul.appendChild(li);
+
+            if (child.children) {
+                createTree(child, li);
+            }
+        });
+    }
+
+    const rootEl = document.createElement('div');
+    rootEl.dataset.root = true;
+    rootEl.innerHTML = `<h4 class="font-bold text-lg">${appData.taxonomy.name}</h4>`;
+    taxonomyTreeEl.appendChild(rootEl);
+    createTree(appData.taxonomy, rootEl);
+
+    taxonomyTreeEl.addEventListener('click', e => {
+        if (e.target.classList.contains('toggle')) {
+            const childUl = e.target.parentElement.querySelector('ul');
+            if (childUl) {
+                childUl.classList.toggle('hidden');
+                e.target.innerHTML = childUl.classList.contains('hidden') 
+                    ? `&#9654; ${e.target.textContent.substring(2)}`
+                    : `&#9660; ${e.target.textContent.substring(2)}`;
+            }
+        }
+    });
+
+    const toolsGridEl = document.getElementById('tools-grid');
+    appData.tools.forEach(tool => {
+        const card = document.createElement('div');
+        card.className = 'section-card p-5 rounded-lg';
+        card.innerHTML = `
+            <h4 class="font-bold text-lg">${tool.name}</h4>
+            <span class="text-xs font-semibold uppercase tracking-wider text-white px-2 py-0.5 rounded-full ${tool.category === 'LLMs' ? 'bg-blue-500' : tool.category === 'Simulation' ? 'bg-green-500' : tool.category === 'Frameworks' ? 'bg-purple-500' : 'bg-yellow-500'}">${tool.category}</span>
+            <p class="text-gray-600 mt-2 text-sm">${tool.description}</p>
+        `;
+        toolsGridEl.appendChild(card);
+    });
+
+    const ctx = document.getElementById('qualityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: appData.qualityChartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: { display: true, text: 'Model Performance (Accuracy %)' }
+                },
+                x: {
+                    title: { display: true, text: '% of Synthetic Data in Training Set' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ` Performance: ${context.parsed.y}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('main section');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 80) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').substring(1) === current) {
+                link.classList.add('active');
+            }
+        });
+    });
+
+    // Gemini API Integration - Prompt Generation
+    const promptScenarioInput = document.getElementById('prompt-scenario-input');
+    const generatePromptBtn = document.getElementById('generate-prompt-btn');
+    const generatedPromptOutput = document.getElementById('generated-prompt-output');
+    const promptSpinner = document.getElementById('prompt-spinner');
+
+    generatePromptBtn.addEventListener('click', async () => {
+        const scenario = promptScenarioInput.value.trim();
+        if (!scenario) {
+            generatedPromptOutput.textContent = "Please describe a scenario to generate a prompt.";
+            return;
+        }
+
+        promptSpinner.style.display = 'block';
+        generatePromptBtn.disabled = true;
+        generatedPromptOutput.textContent = '';
+
+        try {
+            let chatHistory = [];
+            const prompt = `Generate a system prompt and a user prompt for a text classifier based on the following scenario: "${scenario}".
+            
+            Format the output clearly, with "System Prompt:" and "User Prompt:" labels.`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                generatedPromptOutput.textContent = text;
+            } else {
+                generatedPromptOutput.textContent = "Could not generate prompt. Please try again.";
+            }
+        } catch (error) {
+            console.error('Error generating prompt:', error);
+            generatedPromptOutput.textContent = "An error occurred while generating the prompt. Please check your network or try again later.";
+        } finally {
+            promptSpinner.style.display = 'none';
+            generatePromptBtn.disabled = false;
+        }
+    });
+
+    // Gemini API Integration - Intent Expansion
+    const expandIntentInput = document.getElementById('expand-intent-input');
+    const expandIntentBtn = document.getElementById('expand-intent-btn');
+    const expandedIntentsOutput = document.getElementById('expanded-intents-output');
+    const intentSpinner = document.getElementById('intent-spinner');
+
+    expandIntentBtn.addEventListener('click', async () => {
+        const broadIntent = expandIntentInput.value.trim();
+        if (!broadIntent) {
+            expandedIntentsOutput.textContent = "Please enter a broad intent to expand.";
+            return;
+        }
+
+        intentSpinner.style.display = 'block';
+        expandIntentBtn.disabled = true;
+        expandedIntentsOutput.textContent = '';
+
+        try {
+            let chatHistory = [];
+            const prompt = `Suggest 5-7 more specific sub-intents for the broad intent: "${broadIntent}".
+            
+            List them as a comma-separated string, e.g., "Sub-intent 1, Sub-intent 2, Sub-intent 3".`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                const intentsArray = text.split(',').map(item => item.trim()).filter(item => item !== '');
+                if (intentsArray.length > 0) {
+                    expandedIntentsOutput.innerHTML = `<ul class="list-disc list-inside space-y-1">` + 
+                        intentsArray.map(intent => `<li>${intent}</li>`).join('') + 
+                        `</ul>`;
+                } else {
+                    expandedIntentsOutput.textContent = "No sub-intents suggested.";
+                }
+            } else {
+                expandedIntentsOutput.textContent = "Could not expand intent. Please try again.";
+            }
+        } catch (error) {
+            console.error('Error expanding intent:', error);
+            expandedIntentsOutput.textContent = "An error occurred while expanding the intent. Please check your network or try again later.";
+        } finally {
+            intentSpinner.style.display = 'none';
+            expandIntentBtn.disabled = false;
+        }
+    });
+});
+</script>
+
+</body>
+</html>
