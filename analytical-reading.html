@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Your Next Analytical Read</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A dashboard-style SPA is used to transform the linear report into an interactive discovery tool. The structure includes a header, a prominent filter/control panel, a data visualization section (chart and stats), and a responsive book card grid. This non-linear design empowers users to explore the recommendations based on their own criteria (genre, theme, search) rather than passively scrolling. A modal is used for detailed views to keep the main interface clean and focused, following the principle of progressive disclosure for better usability. -->
+    <!-- Visualization & Content Choices: Report Info: Book list by genre/theme -> Goal: Organize/Explore -> Viz/Presentation: Interactive card grid with filters and a modal for details. Justification: Allows for active user-driven discovery instead of passive reading. Report Info: Genre distribution -> Goal: Inform/Compare -> Viz/Presentation: Dynamic Chart.js donut chart. Justification: Provides a quick, high-level visual summary of the collection's composition that updates with user interaction. Report Info: Detailed justifications -> Goal: Inform -> Viz/Presentation: Text in a modal. Justification: Hides secondary information by default to reduce clutter, revealing it on demand. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; height: 320px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .modal-bg { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div id="app">
+        <header class="bg-white shadow-sm sticky top-0 z-20">
+            <div class="container mx-auto px-4 py-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-stone-900">Find Your Next Analytical Read</h1>
+                <p class="text-stone-600 mt-1">An interactive guide to books that celebrate ingenuity and problem-solving, inspired by "The Martian".</p>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4 md:p-8">
+            <section id="controls" class="mb-8 p-6 bg-white rounded-xl shadow-md">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="lg:col-span-2">
+                        <label for="search" class="block text-sm font-medium text-stone-700 mb-1">Search by Title or Author</label>
+                        <input type="text" id="search" placeholder="e.g., Hatchet or Michael Crichton" class="w-full px-3 py-2 bg-stone-100 border border-stone-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                    </div>
+                    <div>
+                        <label for="genre-filter" class="block text-sm font-medium text-stone-700 mb-1">Filter by Genre</label>
+                        <select id="genre-filter" class="w-full px-3 py-2 bg-stone-100 border border-stone-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                            <option value="all">All Genres</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="theme-filter" class="block text-sm font-medium text-stone-700 mb-1">Filter by Theme</label>
+                        <select id="theme-filter" class="w-full px-3 py-2 bg-stone-100 border border-stone-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                            <option value="all">All Themes</option>
+                            <option value="Survival Through Wit">Survival Through Wit</option>
+                            <option value="The Art of the Plan">The Art of the Plan</option>
+                            <option value="New Frontiers, New Challenges">New Frontiers, New Challenges</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section id="dashboard" class="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+                <div class="lg:col-span-2 p-6 bg-white rounded-xl shadow-md">
+                    <h2 class="text-xl font-bold text-center mb-4 text-stone-800">Recommendations by Genre</h2>
+                     <div class="chart-container">
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-md h-full flex flex-col justify-center">
+                    <h2 class="text-xl font-bold text-center mb-4 text-stone-800">Collection at a Glance</h2>
+                    <div id="stats" class="space-y-4 text-center">
+                        <div>
+                            <p class="text-4xl font-bold text-teal-600" id="total-books">0</p>
+                            <p class="text-stone-600">Total Recommendations</p>
+                        </div>
+                        <div>
+                            <p class="text-4xl font-bold text-teal-600" id="sci-fi-books">0</p>
+                            <p class="text-stone-600">Science Fiction Titles</p>
+                        </div>
+                         <div>
+                            <p class="text-4xl font-bold text-teal-600" id="non-fiction-books">0</p>
+                            <p class="text-stone-600">Non-Fiction Reads</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="book-grid-container">
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-stone-800">Book Recommendations</h2>
+                    <p id="results-count" class="text-stone-600 font-medium"></p>
+                </div>
+                <div id="book-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                </div>
+            </section>
+        </main>
+
+        <div id="modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-bg bg-black bg-opacity-50">
+            <div id="modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform scale-95">
+                <div class="sticky top-0 bg-white p-4 border-b border-stone-200 flex justify-between items-center">
+                    <h3 id="modal-title" class="text-2xl font-bold text-stone-900"></h3>
+                    <button id="modal-close" class="text-stone-500 hover:text-stone-800 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <p class="text-sm text-stone-600 mb-4">
+                        <span id="modal-author" class="font-semibold"></span> | 
+                        <span id="modal-genre" class="italic"></span>
+                    </p>
+                    <p id="modal-plot" class="text-stone-700 mb-6"></p>
+                    <h4 class="text-lg font-semibold text-stone-800 mb-2">Why It's a Match for "The Martian" Fans:</h4>
+                    <p id="modal-justification" class="text-stone-700 leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const books = [
+            { title: 'Hatchet', author: 'Gary Paulsen', genre: 'Fiction', theme: 'Survival Through Wit', plot: 'A 13-year-old boy is stranded in the Canadian wilderness after a plane crash and must rely on his wits and a hatchet to survive.', justification: 'Like Mark Watney, Brian faces extreme isolation and must rely solely on his ingenuity and limited tools. The narrative meticulously details his trial-and-error process of learning wilderness survival skills, making it a powerful demonstration of practical problem-solving.' },
+            { title: 'Z for Zachariah', author: 'Robert C. O\'Brien', genre: 'Fiction', theme: 'Survival Through Wit', plot: 'A young woman believes she is the sole survivor of a nuclear war until a stranger arrives, challenging her isolated existence.', justification: 'Shares profound themes of isolation and survival in a hostile environment. Ann\'s resourcefulness and analytical assessment of the new arrival provide a crucial psychological dimension to survival and resource management.' },
+            { title: 'Station Eleven', author: 'Emily St. John Mandel', genre: 'Contemporary Fiction', theme: 'Survival Through Wit', plot: 'Survivors of a devastating flu pandemic navigate a new world, preserving art and finding meaning beyond mere subsistence.', justification: 'Evokes a similar sense of isolation and the human drive to rebuild. Problem-solving extends beyond basic needs to the very essence of what it means to be human, applying ingenuity to societal and cultural challenges.' },
+            { title: 'Into Thin Air', author: 'Jon Krakauer', genre: 'Non-fiction', theme: 'Survival Through Wit', plot: 'A gripping account of the disastrous 1996 climbing season on Mt. Everest, detailing human limits and decision-making under duress.', justification: 'A real-world parallel to The Martian’s survival narrative. It’s an analytical deep dive into meticulous planning, technical expertise, and decision-making under extreme duress in one of Earth\'s most hostile environments.' },
+            { title: 'Unbroken', author: 'Laura Hillenbrand', genre: 'Non-fiction', theme: 'Survival Through Wit', plot: 'The true story of an Olympian\'s extraordinary survival through a WWII plane crash, 47 days at sea, and brutal POW camps.', justification: 'Details a constant, analytical struggle for survival—from rationing resources to outwitting captors. It showcases ingenuity in a non-technical, yet deeply intellectual, sense, focusing on psychological and strategic perseverance.' },
+            { title: 'The Knowledge: How to Rebuild Our World from Scratch', author: 'Lewis Dartnell', genre: 'Non-fiction', theme: 'Survival Through Wit', plot: 'A practical guide detailing the scientific and technological principles needed to rebuild civilization after a global catastrophe.', justification: 'A pure embodiment of "analytical and well thought of many details." It systematically breaks down the complex challenges of societal collapse into manageable, solvable problems, much like Watney on Mars.' },
+            { title: 'Seveneves', author: 'Neal Stephenson', genre: 'Science Fiction', theme: 'The Art of the Plan', plot: 'Humanity races against time to ensure its survival off-planet after the Moon mysteriously explodes.', justification: 'Hard science fiction with a deep commitment to detailed technical problem-solving. It presents a grand-scale survival challenge requiring immense logistical planning and engineering feats.' },
+            { title: 'Children of Time', author: 'Adrian Tchaikovsky', genre: 'Science Fiction', theme: 'The Art of the Plan', plot: 'Humanity\'s last survivors discover a terraformed planet inhabited by a civilization that has undergone a vastly different evolutionary path.', justification: 'Delves into complex biological and sociological problem-solving. The detailed depiction of evolutionary processes and alien societies is highly analytical, requiring thought from both human and alien perspectives.' },
+            { title: 'Anathem', author: 'Neal Stephenson', genre: 'Science Fiction', theme: 'The Art of the Plan', plot: 'A cloistered academic society on an alternate Earth confronts an alien spaceship, forcing abstract ideas into action.', justification: 'A deeply intellectual novel focusing on the analytical process of applying complex theoretical frameworks (math, physics, philosophy) to existential threats. A cerebral puzzle for those who enjoy abstract problem-solving.' },
+            { title: 'Lock In', author: 'John Scalzi', genre: 'Science Fiction', theme: 'The Art of the Plan', plot: 'A murder mystery unfolds in a future where a virus has left many "locked in," relying on neural interfaces and robotic bodies.', justification: 'The analytical appeal lies in its detailed exploration of how society adapts to a novel disability through technological innovation. The core mystery is solved through methodical investigation in this unique context.' },
+            { title: 'The Three-Body Problem', author: 'Cixin Liu', genre: 'Science Fiction', theme: 'The Art of the Plan', plot: 'Scientists confront the implications of contact with an alien civilization from a planet orbiting three suns, preparing for invasion.', justification: 'A grand-scale intellectual puzzle exploring complex physics and game theory. The problem-solving is about inter-species strategy and long-term planning across millennia.' },
+            { title: 'Six of Crows', author: 'Leigh Bardugo', genre: 'Fantasy/Heist Fiction', theme: 'The Art of the Plan', plot: 'A criminal mastermind assembles a diverse crew for an impossible heist in a bustling, crime-ridden city.', justification: 'A prime example of detailed planning and execution. The entire plot revolves around an intricate, multi-layered heist, presented as a complex engineering problem where the "engineers" are master criminals.' },
+            { title: 'The Lies of Locke Lamora', author: 'Scott Lynch', genre: 'Fantasy/Heist Fiction', theme: 'The Art of the Plan', plot: 'A master con artist leads his gang in pulling off intricate schemes against the wealthy nobility of a Venice-inspired city.', justification: 'The analytical aspect is the detailed construction and execution of elaborate cons, which are essentially multi-layered intellectual puzzles. It transforms the narrative into a form of intellectual combat.' },
+            { title: 'The Great Train Robbery', author: 'Michael Crichton', genre: 'Historical Fiction/Thriller', theme: 'The Art of the Plan', plot: 'A master thief meticulously plans and executes a daring gold heist from a moving train in Victorian England.', justification: 'Crichton applies his scientific rigor to a historical crime. The book meticulously details the "engineering" of the crime, from key duplication to diverting police, echoing Watney\'s methodical problem-solving.' },
+            { title: 'The 7 1/2 Deaths of Evelyn Hardcastle', author: 'Stuart Turton', genre: 'Mystery/Puzzle Fiction', theme: 'The Art of the Plan', plot: 'A man must solve a murder within eight days, waking up in a different body each day, to break a bewildering loop.', justification: 'The very structure of the narrative is the puzzle. It requires the reader to analytically synthesize information from fragmented perspectives, making the story itself an intricate intellectual challenge.' },
+            { title: 'The Curious Incident of the Dog in the Night-Time', author: 'Mark Haddon', genre: 'Contemporary Fiction', theme: 'The Art of the Plan', plot: 'A 15-year-old boy with a unique, logical mind investigates the suspicious death of his neighbor\'s dog.', justification: 'The analytical appeal stems from seeing the world through the protagonist\'s distinct, systematic, and detail-oriented lens. His internal monologues mirror the clarity and precision of Watney\'s scientific logs.' },
+            { title: 'The Twyford Code', author: 'Janice Hallett', genre: 'Mystery/Puzzle Fiction', theme: 'The Art of the Plan', plot: 'An ex-convict attempts to solve a decades-old mystery involving his missing teacher and a secret code hidden in children\'s books.', justification: 'The book explicitly invites the reader to engage in the analytical process of code-breaking. The narrative format makes the act of reading itself an analytical challenge, providing an immersive problem-solving experience.' },
+            { title: 'Red Mars', author: 'Kim Stanley Robinson', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'Chronicles the colonization and terraforming of Mars by a group of scientists and engineers.', justification: 'A grand-scale version of The Martian\'s problem-solving, focusing on the long-term, complex engineering and ecological challenges of making an entire planet habitable. A highly analytical exploration of planetary-scale ingenuity.' },
+            { title: 'The Calculating Stars', author: 'Mary Robinette Kowal', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'An alternate 1952 meteorite strike accelerates the space race, following a female mathematician and pilot fighting to become an astronaut.', justification: 'The analytical depth is twofold: the detailed technical challenges of 1950s-era space travel and the equally complex "social engineering" required to overcome prejudice and build a diverse, effective team.' },
+            { title: 'Rendezvous with Rama', author: 'Arthur C. Clarke', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'A human crew is sent to explore a mysterious, enormous cylindrical alien spaceship that has entered the solar system.', justification: 'The entire narrative is a methodical, analytical investigation of an unknown object. The core of the story is the process of scientific discovery and deduction, mirroring Watney\'s approach to Mars.' },
+            { title: 'The Expanse Series', author: 'James S.A. Corey', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'A detective and a ship\'s officer uncover a vast conspiracy that threatens to ignite an interstellar war.', justification: 'Presents complex political, social, and technological problems. The analytical appeal lies in the intricate interplay of factions, economics, and science, requiring strategic thinking on a geopolitical scale.' },
+            { title: 'The Long Way to a Small, Angry Planet', author: 'Becky Chambers', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'A young woman joins the diverse crew of a tunneling ship that constructs hyperspace routes, navigating alien cultures and forming a family.', justification: 'The problem-solving shifts from technical engineering to the intricate "social engineering" of diverse species. It requires keen observation and strategic communication—a different, yet equally detailed, form of analysis.' },
+            { title: 'The Sparrow', author: 'Mary Doria Russell', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'A Jesuit priest leads an expedition to a distant planet after discovering an alien radio signal, with profound and devastating results.', justification: 'The problem-solving involves meticulous anthropological observation, linguistic analysis, and ethical decision-making in a truly alien context, demanding deep analytical engagement from the reader.' },
+            { title: 'Pushing Ice', author: 'Alastair Reynolds', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'The crew of an ice miner is flung into deep space, forced to adapt their ship for a journey it was never designed for.', justification: 'Hard science fiction that presents formidable engineering and survival challenges. The detailed technical explanations of their efforts to survive will appeal to those who appreciate large-scale problem-solving.' },
+            { title: 'Saturn Run', author: 'John Sandford and Ctein', genre: 'Science Fiction', theme: 'New Frontiers, New Challenges', plot: 'Humanity races to intercept a mysterious alien object heading towards Saturn, sparking an international space race.', justification: 'Focuses on the meticulous planning and execution of a complex interstellar mission. The analytical depth comes from the detailed descriptions of the scientific and engineering hurdles that must be overcome.' },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('search');
+            const genreFilter = document.getElementById('genre-filter');
+            const themeFilter = document.getElementById('theme-filter');
+            const bookGrid = document.getElementById('book-grid');
+            const resultsCount = document.getElementById('results-count');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalClose = document.getElementById('modal-close');
+            
+            let genreChart;
+
+            function populateFilters() {
+                const genres = [...new Set(books.map(book => book.genre))].sort();
+                genres.forEach(genre => {
+                    const option = document.createElement('option');
+                    option.value = genre;
+                    option.textContent = genre;
+                    genreFilter.appendChild(option);
+                });
+            }
+
+            function renderBooks(filteredBooks) {
+                bookGrid.innerHTML = '';
+                if (filteredBooks.length === 0) {
+                    bookGrid.innerHTML = `<p class="text-stone-600 md:col-span-2 lg:col-span-4 text-center">No books match your criteria. Try adjusting your filters.</p>`;
+                } else {
+                    filteredBooks.forEach((book, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-white rounded-xl shadow-md overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-300';
+                        card.innerHTML = `
+                            <div class="p-6 flex-grow">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-teal-600 mb-1">${book.genre}</p>
+                                <h3 class="text-lg font-bold text-stone-900 mb-1">${book.title}</h3>
+                                <p class="text-sm text-stone-500 mb-4">by ${book.author}</p>
+                                <p class="text-stone-700 text-sm flex-grow">${book.plot.substring(0, 100)}...</p>
+                            </div>
+                            <div class="p-4 bg-stone-50">
+                                <button data-index="${index}" class="details-btn w-full text-center px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors">Show Details</button>
+                            </div>
+                        `;
+                        bookGrid.appendChild(card);
+                    });
+                }
+                resultsCount.textContent = `${filteredBooks.length} result(s) found`;
+            }
+
+            function updateStats(filteredBooks) {
+                document.getElementById('total-books').textContent = filteredBooks.length;
+                document.getElementById('sci-fi-books').textContent = filteredBooks.filter(b => b.genre === 'Science Fiction').length;
+                document.getElementById('non-fiction-books').textContent = filteredBooks.filter(b => b.genre === 'Non-fiction').length;
+            }
+            
+            function renderChart(filteredBooks) {
+                const ctx = document.getElementById('genreChart').getContext('2d');
+                const genreCounts = filteredBooks.reduce((acc, book) => {
+                    acc[book.genre] = (acc[book.genre] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const labels = Object.keys(genreCounts);
+                const data = Object.values(genreCounts);
+                
+                const backgroundColors = [
+                    '#0d9488', '#0f766e', '#115e59', '#134e4a',
+                    '#f97316', '#ea580c', '#c2410c', '#9a3412',
+                    '#64748b', '#475569', '#334155', '#1e293b'
+                ];
+
+                if (genreChart) {
+                    genreChart.destroy();
+                }
+
+                genreChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Books by Genre',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 20,
+                                    padding: 15,
+                                    font: {
+                                        family: "'Inter', sans-serif"
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                titleFont: { family: "'Inter', sans-serif" },
+                                bodyFont: { family: "'Inter', sans-serif" },
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += context.parsed;
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function filterAndRender() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedGenre = genreFilter.value;
+                const selectedTheme = themeFilter.value;
+
+                const filteredBooks = books.filter(book => {
+                    const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm);
+                    const matchesGenre = selectedGenre === 'all' || book.genre === selectedGenre;
+                    const matchesTheme = selectedTheme === 'all' || book.theme === selectedTheme;
+                    return matchesSearch && matchesGenre && matchesTheme;
+                });
+                
+                const originalFullList = books.filter(book => {
+                    const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm);
+                    const matchesGenre = genreFilter.value === 'all' || book.genre === genreFilter.value;
+                    const matchesTheme = themeFilter.value === 'all' || book.theme === themeFilter.value;
+                    return matchesSearch && matchesGenre && matchesTheme;
+                });
+                
+                const bookIndices = new Map(originalFullList.map((book, index) => [book.title, index]));
+
+                filteredBooks.forEach(book => {
+                    const originalIndex = books.findIndex(b => b.title === book.title);
+                    const card = bookGrid.querySelector(`button[data-index="${originalIndex}"]`);
+                });
+
+                renderBooks(filteredBooks);
+                updateStats(filteredBooks);
+                renderChart(filteredBooks);
+            }
+
+            function showModal(book) {
+                document.getElementById('modal-title').textContent = book.title;
+                document.getElementById('modal-author').textContent = book.author;
+                document.getElementById('modal-genre').textContent = book.genre;
+                document.getElementById('modal-plot').textContent = book.plot;
+                document.getElementById('modal-justification').textContent = book.justification;
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                }, 10);
+            }
+
+            function hideModal() {
+                modal.classList.add('opacity-0');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            bookGrid.addEventListener('click', (e) => {
+                if (e.target.classList.contains('details-btn')) {
+                    const bookIndex = e.target.getAttribute('data-index');
+                    
+                    const searchTerm = searchInput.value.toLowerCase();
+                    const selectedGenre = genreFilter.value;
+                    const selectedTheme = themeFilter.value;
+
+                    const currentFilteredBooks = books.filter(book => {
+                        const matchesSearch = book.title.toLowerCase().includes(searchTerm) || book.author.toLowerCase().includes(searchTerm);
+                        const matchesGenre = selectedGenre === 'all' || book.genre === selectedGenre;
+                        const matchesTheme = selectedTheme === 'all' || book.theme === selectedTheme;
+                        return matchesSearch && matchesGenre && matchesTheme;
+                    });
+                    
+                    showModal(currentFilteredBooks[bookIndex]);
+                }
+            });
+
+            modalClose.addEventListener('click', hideModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideModal();
+                }
+            });
+            
+            searchInput.addEventListener('input', filterAndRender);
+            genreFilter.addEventListener('change', filterAndRender);
+            themeFilter.addEventListener('change', filterAndRender);
+
+            populateFilters();
+            filterAndRender();
+        });
+    </script>
+</body>
+</html>
