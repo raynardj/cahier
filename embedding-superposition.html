@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superposition in Embeddings</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chroma.js for color manipulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #334155;
+        }
+        .feature-color-box {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+        }
+        .embedding-dimension-box {
+            width: 10rem;
+            height: 10rem;
+            border-radius: 1rem;
+            border: 2px solid #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #e2e8f0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .reconstructed-feature-box {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #94a3b8;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
+
+    <div class="max-w-4xl w-full bg-white shadow-xl rounded-2xl p-6 sm:p-10 mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-4">Superposition in Embeddings: An Interactive Demo</h1>
+        <p class="text-base sm:text-lg text-gray-700 mb-6 leading-relaxed">
+            Explore how neural networks can represent more features than their explicit dimensions through <strong>superposition</strong>.
+            In this simplified model, we have several distinct "features" (colors) that are projected into a limited "embedding space" (two dimensions).
+            Observe how features are combined and the resulting "reconstruction error" when trying to recover the original features from the compressed representation.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Features Control Panel -->
+            <div class="md:col-span-1 bg-indigo-50 p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-semibold text-indigo-800 mb-4">Features</h2>
+                <div id="features-container" class="space-y-4">
+                    <!-- Feature items will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Embedding Space & Reconstruction -->
+            <div class="md:col-span-2 flex flex-col gap-8">
+                <div class="bg-blue-50 p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold text-blue-800 mb-4">Embedding Space (2 Dimensions)</h2>
+                    <p class="text-gray-600 mb-4">
+                        This is the compressed representation where active features are combined.
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-around items-center gap-6">
+                        <div class="flex flex-col items-center">
+                            <div id="embedding-dim-0" class="embedding-dimension-box bg-gray-300">Dim 1</div>
+                            <span class="mt-2 text-gray-600">Dimension 1</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div id="embedding-dim-1" class="embedding-dimension-box bg-gray-300">Dim 2</div>
+                            <span class="mt-2 text-gray-600">Dimension 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold text-green-800 mb-4">Reconstructed Features</h2>
+                    <p class="text-gray-600 mb-4">
+                        The model attempts to reconstruct original features from the embedding space.
+                        A higher error indicates more interference or loss of information.
+                    </p>
+                    <div id="reconstructed-features-container" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- Reconstructed feature items will be injected here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Controls and Metrics -->
+        <div class="mt-8 bg-purple-50 p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-semibold text-purple-800 mb-4">Global Controls & Metrics</h2>
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                <button id="randomize-weights-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    Randomize Embedding Weights
+                </button>
+                <button id="reset-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    Reset All
+                </button>
+            </div>
+            <div class="text-lg font-medium text-gray-700">
+                Total Reconstruction Loss: <span id="total-loss" class="font-bold text-red-600">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global constants and variables
+        const NUM_FEATURES = 5; // Number of distinct features
+        const EMBEDDING_DIMS = 2; // Number of embedding dimensions (fixed for visualization)
+
+        // Predefined distinct colors for features
+        const FEATURE_COLORS_HEX = [
+            '#FF6347', // Tomato
+            '#4682B4', // SteelBlue
+            '#3CB371', // MediumSeaGreen
+            '#FFD700', // Gold
+            '#9370DB'  // MediumPurple
+        ];
+
+        // Data structure for features
+        let featuresData = [];
+        // Weight matrix (N features x D dimensions)
+        // W[i][j] represents how much of feature i contributes to dimension j
+        let embeddingWeights = [];
+
+        // DOM elements
+        const featuresContainer = document.getElementById('features-container');
+        const embeddingDimBoxes = [
+            document.getElementById('embedding-dim-0'),
+            document.getElementById('embedding-dim-1')
+        ];
+        const reconstructedFeaturesContainer = document.getElementById('reconstructed-features-container');
+        const totalLossSpan = document.getElementById('total-loss');
+        const randomizeWeightsBtn = document.getElementById('randomize-weights-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        /**
+         * Initializes the feature data with predefined colors and default properties.
+         */
+        function initializeFeatures() {
+            featuresData = FEATURE_COLORS_HEX.map((color, index) => ({
+                id: `feature-${index}`,
+                name: `Feature ${String.fromCharCode(65 + index)}`, // A, B, C, ...
+                originalColor: chroma(color), // Store chroma.js color object
+                active: true, // All active by default
+                importance: 1.0, // Default importance
+                reconstructionError: 0 // Initial error
+            }));
+        }
+
+        /**
+         * Generates random weights for the embedding matrix.
+         * Weights are normalized to sum to 1 for each feature across dimensions,
+         * ensuring consistent contribution.
+         */
+        function randomizeEmbeddingWeights() {
+            embeddingWeights = [];
+            for (let i = 0; i < NUM_FEATURES; i++) {
+                let rowWeights = [];
+                let sum = 0;
+                for (let j = 0; j < EMBEDDING_DIMS; j++) {
+                    const weight = Math.random();
+                    rowWeights.push(weight);
+                    sum += weight;
+                }
+                // Normalize weights so they sum to 1 for each feature
+                rowWeights = rowWeights.map(w => w / sum);
+                embeddingWeights.push(rowWeights);
+            }
+            console.log('New Embedding Weights:', embeddingWeights);
+        }
+
+        /**
+         * Renders the control panel for individual features.
+         */
+        function renderFeaturesControl() {
+            featuresContainer.innerHTML = '';
+            featuresData.forEach(feature => {
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'flex flex-col p-3 bg-white rounded-lg shadow-sm';
+                featureDiv.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <div class="feature-color-box mr-3" style="background-color: ${feature.originalColor.hex()};"></div>
+                            <span class="font-medium text-gray-800">${feature.name}</span>
+                        </div>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" data-feature-id="${feature.id}" class="form-checkbox h-5 w-5 text-indigo-600 rounded" ${feature.active ? 'checked' : ''}>
+                            <span class="ml-2 text-sm text-gray-600">Active</span>
+                        </label>
+                    </div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Importance:</label>
+                    <input type="range" min="0.1" max="2.0" step="0.1" value="${feature.importance}" data-feature-id="${feature.id}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    <div class="mt-2 text-sm text-gray-600 flex justify-between">
+                        <span>Error:</span>
+                        <span id="${feature.id}-error" class="font-bold text-red-500">${feature.reconstructionError.toFixed(2)}</span>
+                    </div>
+                `;
+                featuresContainer.appendChild(featureDiv);
+
+                // Add event listeners for checkboxes and sliders
+                const checkbox = featureDiv.querySelector(`input[type="checkbox"][data-feature-id="${feature.id}"]`);
+                checkbox.addEventListener('change', (e) => {
+                    feature.active = e.target.checked;
+                    updateVisualization();
+                });
+
+                const importanceSlider = featureDiv.querySelector(`input[type="range"][data-feature-id="${feature.id}"]`);
+                importanceSlider.addEventListener('input', (e) => {
+                    feature.importance = parseFloat(e.target.value);
+                    updateVisualization();
+                });
+            });
+        }
+
+        /**
+         * Calculates the mixed colors for each embedding dimension.
+         * This simulates the projection (x * W).
+         */
+        function calculateEmbeddingColors() {
+            const mixedColors = Array(EMBEDDING_DIMS).fill(null).map(() => [0, 0, 0]); // [R, G, B] for each dimension
+
+            featuresData.forEach((feature, featureIndex) => {
+                if (feature.active) {
+                    const originalRGB = feature.originalColor.rgb();
+                    for (let dim = 0; dim < EMBEDDING_DIMS; dim++) {
+                        // Add weighted contribution of feature's color to the dimension
+                        mixedColors[dim][0] += originalRGB[0] * embeddingWeights[featureIndex][dim] * feature.importance;
+                        mixedColors[dim][1] += originalRGB[1] * embeddingWeights[featureIndex][dim] * feature.importance;
+                        mixedColors[dim][2] += originalRGB[2] * embeddingWeights[featureIndex][dim] * feature.importance;
+                    }
+                }
+            });
+
+            // Normalize and clamp colors to valid RGB range [0, 255]
+            // This normalization is a simplification; in a real model, activations might be non-linear.
+            const maxVal = Math.max(...mixedColors.flat());
+            const scaleFactor = maxVal > 255 ? 255 / maxVal : 1;
+
+            return mixedColors.map(rgb => rgb.map(val => Math.min(255, Math.max(0, val * scaleFactor))));
+        }
+
+        /**
+         * Calculates the reconstructed features from the mixed embedding colors.
+         * This simulates the reconstruction (projection * W^T).
+         */
+        function calculateReconstructedFeatures(mixedRGBColors) {
+            // Convert mixed RGB colors to a 2-element vector of chroma.js colors
+            const projectionVector = mixedRGBColors.map(rgb => chroma(rgb[0], rgb[1], rgb[2]));
+
+            // Transpose of embeddingWeights (D x N matrix)
+            const embeddingWeightsT = Array(EMBEDDING_DIMS).fill(null).map(() => Array(NUM_FEATURES).fill(0));
+            for (let i = 0; i < NUM_FEATURES; i++) {
+                for (let j = 0; j < EMBEDDING_DIMS; j++) {
+                    embeddingWeightsT[j][i] = embeddingWeights[i][j];
+                }
+            }
+
+            const reconstructedFeaturesRGB = Array(NUM_FEATURES).fill(null).map(() => [0, 0, 0]);
+
+            // Perform projection * W^T
+            for (let i = 0; i < NUM_FEATURES; i++) { // For each original feature
+                let reconR = 0, reconG = 0, reconB = 0;
+                for (let j = 0; j < EMBEDDING_DIMS; j++) { // Sum over embedding dimensions
+                    const projRGB = projectionVector[j].rgb();
+                    reconR += projRGB[0] * embeddingWeightsT[j][i];
+                    reconG += projRGB[1] * embeddingWeightsT[j][i];
+                    reconB += projRGB[2] * embeddingWeightsT[j][i];
+                }
+                reconstructedFeaturesRGB[i] = [reconR, reconG, reconB];
+            }
+
+            // Normalize and clamp colors
+            const maxVal = Math.max(...reconstructedFeaturesRGB.flat());
+            const scaleFactor = maxVal > 255 ? 255 / maxVal : 1;
+
+            return reconstructedFeaturesRGB.map(rgb => rgb.map(val => Math.min(255, Math.max(0, val * scaleFactor))));
+        }
+
+        /**
+         * Calculates the color difference (Euclidean distance in RGB space)
+         * between two chroma.js color objects.
+         */
+        function getColorDifference(color1, color2) {
+            const rgb1 = color1.rgb();
+            const rgb2 = color2.rgb();
+            return Math.sqrt(
+                Math.pow(rgb1[0] - rgb2[0], 2) +
+                Math.pow(rgb1[1] - rgb2[1], 2) +
+                Math.pow(rgb1[2] - rgb2[2], 2)
+            );
+        }
+
+        /**
+         * Updates all visualizations based on current feature states and weights.
+         */
+        function updateVisualization() {
+            // 1. Calculate mixed colors in embedding dimensions
+            const mixedRGBColors = calculateEmbeddingColors();
+            embeddingDimBoxes[0].style.backgroundColor = chroma(mixedRGBColors[0]).hex();
+            embeddingDimBoxes[1].style.backgroundColor = chroma(mixedRGBColors[1]).hex();
+
+            // 2. Calculate reconstructed features
+            const reconstructedRGBColors = calculateReconstructedFeatures(mixedRGBColors);
+
+            // 3. Update reconstructed features display and calculate individual errors
+            let totalLoss = 0;
+            reconstructedFeaturesContainer.innerHTML = ''; // Clear previous
+            featuresData.forEach((feature, index) => {
+                const reconstructedColor = chroma(reconstructedRGBColors[index][0], reconstructedRGBColors[index][1], reconstructedRGBColors[index][2]);
+                const error = getColorDifference(feature.originalColor, reconstructedColor);
+
+                // Update feature data with new error
+                feature.reconstructionError = error;
+                totalLoss += feature.importance * Math.pow(error, 2); // Squared error, weighted by importance
+
+                // Render reconstructed feature box
+                const reconDiv = document.createElement('div');
+                reconDiv.className = 'flex flex-col items-center p-2 bg-white rounded-lg shadow-sm';
+                reconDiv.innerHTML = `
+                    <div class="reconstructed-feature-box" style="background-color: ${reconstructedColor.hex()};"></div>
+                    <span class="text-xs text-gray-600 mt-1">${feature.name}</span>
+                    <span class="text-sm font-semibold ${error > 50 ? 'text-red-600' : 'text-green-600'}">${error.toFixed(1)}</span>
+                `;
+                reconstructedFeaturesContainer.appendChild(reconDiv);
+
+                // Update error display in features control panel
+                document.getElementById(`${feature.id}-error`).textContent = error.toFixed(1);
+            });
+
+            // 4. Update total loss
+            totalLossSpan.textContent = totalLoss.toFixed(2);
+        }
+
+        /**
+         * Resets all parameters to their initial state.
+         */
+        function resetAll() {
+            initializeFeatures();
+            randomizeEmbeddingWeights(); // New random weights on reset
+            renderFeaturesControl(); // Re-render controls to reflect initial state
+            updateVisualization(); // Update visualization
+        }
+
+        // Event Listeners for global buttons
+        randomizeWeightsBtn.addEventListener('click', () => {
+            randomizeEmbeddingWeights();
+            updateVisualization();
+        });
+
+        resetBtn.addEventListener('click', resetAll);
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            resetAll(); // Initialize and render everything
+        });
+
+    </script>
+</body>
+</html>
