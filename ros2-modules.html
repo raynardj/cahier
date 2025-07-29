@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive ROS 2 Ecosystem Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals & Muted Tech -->
+    <!-- Application Structure Plan: A single-page dashboard design with a fixed sidebar navigation for quick access to different thematic sections: 'Introduction', 'Core Concepts', 'Essential Packages', and 'Best Practices'. This non-linear structure allows users to jump directly to the content they need, which is more user-friendly than a long, scrolling document. Key interactions include: 1) A clickable diagram for 'Core Concepts' to dynamically display details, making the relationships between primitives clearer than a static table. 2) A card-based layout for 'Essential Packages' with a click-to-reveal modal for in-depth information, keeping the main view uncluttered. 3) An interactive chart comparing C++ and Python to visually represent performance trade-offs. 4) An accordion for 'Best Practices' to manage information density. This structure is designed for discoverability and focused learning. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Core Communication Primitives (Nodes, Topics, etc.). Goal: Compare & Organize. Viz/Method: Interactive HTML/CSS diagram. Interaction: Click a primitive's name to display its details in an adjacent panel. Justification: More engaging and spatially intuitive than a dense table, showing components as part of a whole system. Library: Vanilla JS for DOM manipulation.
+        - Report Info: Essential ROS 2 Packages (Nav2, MoveIt 2, etc.). Goal: Inform & Organize. Viz/Method: Card grid. Interaction: Click a card to open a modal with detailed information. Justification: Provides a clean, high-level overview while allowing users to drill down into specifics without leaving the page context. Library: Vanilla JS.
+        - Report Info: C++ vs. Python trade-offs. Goal: Compare. Viz/Method: Horizontal Bar Chart. Interaction: Hover for tooltips with exact values. Justification: Visually and immediately communicates the core trade-off (Performance vs. Development Speed) more effectively than descriptive text alone. Library: Chart.js.
+        - Report Info: Troubleshooting & Best Practices. Goal: Organize. Viz/Method: Accordion component. Interaction: Click to expand/collapse sections. Justification: Manages a large amount of text by hiding details until requested, preventing user overload. Library: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF7;
+            color: #383838;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+        .accordion-button.active + .accordion-content {
+            max-height: 1000px;
+        }
+        .concept-button.active {
+            background-color: #007BFF;
+            color: white;
+            transform: scale(1.05);
+        }
+        .nav-link.active {
+            background-color: #E0E7FF;
+            color: #3730A3;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="w-full md:w-64 bg-white border-r border-gray-200 p-4 md:fixed md:h-full">
+            <h1 class="text-2xl font-bold text-indigo-800 mb-8">ROS 2 Explorer</h1>
+            <nav id="navigation" class="flex flex-row md:flex-col gap-2">
+                <a href="#introduction" class="nav-link text-gray-700 hover:bg-gray-100 rounded-lg p-3 transition-colors duration-200">Introduction</a>
+                <a href="#core-concepts" class="nav-link text-gray-700 hover:bg-gray-100 rounded-lg p-3 transition-colors duration-200">Core Concepts</a>
+                <a href="#essential-packages" class="nav-link text-gray-700 hover:bg-gray-100 rounded-lg p-3 transition-colors duration-200">Essential Packages</a>
+                <a href="#best-practices" class="nav-link text-gray-700 hover:bg-gray-100 rounded-lg p-3 transition-colors duration-200">Best Practices</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 md:ml-64 p-4 sm:p-6 lg:p-10">
+            
+            <section id="introduction" class="mb-16">
+                <h2 class="text-4xl font-bold text-gray-800 mb-4">Navigating the ROS 2 Ecosystem</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    This interactive application provides a comprehensive guide to the Robot Operating System 2 (ROS 2). It's designed to help you explore the fundamental concepts, essential tools, and best practices that make ROS 2 a powerful framework for modern robotics. Instead of a static document, this dashboard allows you to interact with the information, making it easier to learn and digest the key components of the ROS 2 landscape.
+                </p>
+                <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-4 rounded-r-lg">
+                    <p>ROS 2 is not a traditional operating system, but a flexible set of software libraries and tools. Its core strength lies in its modular, distributed architecture, which breaks down complex robotics tasks into smaller, independent, and reusable software components called nodes.</p>
+                </div>
+            </section>
+
+            <section id="core-concepts" class="mb-16">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Core Communication Concepts</h2>
+                <p class="text-gray-600 mb-8">
+                    The power of ROS 2 comes from its well-defined communication patterns that allow nodes to interact. Click on each concept below to learn about its role in the ROS 2 graph. This interactive diagram replaces a static table, helping you visualize how these components relate to form a complete system.
+                </p>
+                <div class="lg:grid lg:grid-cols-2 lg:gap-8 items-start">
+                    <div id="concept-selector" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4 mb-8 lg:mb-0">
+                        <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="nodes">
+                            <span class="text-4xl">📦</span>
+                            <span class="block font-semibold mt-2">Nodes</span>
+                        </button>
+                        <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="topics">
+                            <span class="text-4xl">📡</span>
+                            <span class="block font-semibold mt-2">Topics</span>
+                        </button>
+                        <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="services">
+                            <span class="text-4xl">🤝</span>
+                            <span class="block font-semibold mt-2">Services</span>
+                        </button>
+                        <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="actions">
+                            <span class="text-4xl">🏃</span>
+                            <span class="block font-semibold mt-2">Actions</span>
+                        </button>
+                        <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="parameters">
+                            <span class="text-4xl">⚙️</span>
+                            <span class="block font-semibold mt-2">Parameters</span>
+                        </button>
+                         <button class="concept-button p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-all duration-200 text-center" data-concept="discovery">
+                            <span class="text-4xl">🔍</span>
+                            <span class="block font-semibold mt-2">Discovery</span>
+                        </button>
+                    </div>
+                    <div id="concept-details" class="bg-white p-6 rounded-lg shadow-lg min-h-[300px]">
+                        <h3 id="concept-title" class="text-2xl font-bold text-indigo-800 mb-3">Select a concept</h3>
+                        <p id="concept-description" class="text-gray-700 mb-4">Click on a button to the left to see the details here.</p>
+                        <div class="mt-4">
+                            <h4 class="font-semibold text-gray-800">Use Case:</h4>
+                            <p id="concept-usecase" class="text-gray-600"></p>
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="font-semibold text-gray-800">Key Trait:</h4>
+                            <p id="concept-trait" class="text-gray-600"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="essential-packages" class="mb-16">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">Essential Packages</h2>
+                <p class="text-gray-600 mb-8">
+                    The ROS 2 ecosystem includes many powerful packages that provide ready-to-use functionality for common robotics tasks like navigation, manipulation, and mapping. Click on any card to learn more about what each package does.
+                </p>
+                <div id="package-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                </div>
+            </section>
+
+            <section id="best-practices" class="mb-16">
+                 <h2 class="text-3xl font-bold text-gray-800 mb-2">Best Practices & Performance</h2>
+                <p class="text-gray-600 mb-8">
+                    Building robust, high-performance robots requires more than just knowing the tools. This section covers key "in-trade" knowledge, from development workflow to performance tuning and troubleshooting common issues.
+                </p>
+
+                <div class="lg:grid lg:grid-cols-5 lg:gap-8">
+                    <div class="lg:col-span-2 mb-8 lg:mb-0">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">C++ vs. Python</h3>
+                        <p class="text-gray-600 mb-4">ROS 2 lets you mix languages. The choice between C++ and Python often involves a trade-off between raw performance and development speed. This chart visualizes that balance.</p>
+                        <div class="chart-container bg-white p-4 rounded-lg shadow">
+                            <canvas id="languageChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Troubleshooting & Tips</h3>
+                        <div id="accordion" class="space-y-3">
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <footer class="text-center text-gray-500 mt-12">
+                <p>This interactive dashboard was generated to make the ROS 2 ecosystem more accessible and understandable.</p>
+            </footer>
+
+        </main>
+    </div>
+
+    <div id="package-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none">
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+            <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 id="modal-title" class="text-2xl font-bold text-gray-800"></h3>
+                <button id="modal-close" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <p id="modal-description" class="text-gray-700 mb-4"></p>
+                <h4 class="font-semibold text-gray-800 mb-2">Example Nodes/Tools:</h4>
+                <p id="modal-tools" class="text-gray-600 bg-gray-50 p-3 rounded-md"></p>
+                <h4 class="font-semibold text-gray-800 mt-4 mb-2">Importance in Robotics:</h4>
+                <p id="modal-importance" class="text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const conceptData = {
+                nodes: {
+                    title: 'Nodes: The Building Blocks',
+                    description: 'A node is an independent program that performs a specific function. By breaking a complex system into many small nodes, the software becomes modular, fault-tolerant, and easier to debug.',
+                    usecase: 'Processing sensor data, controlling motors, running a navigation algorithm.',
+                    trait: 'Modular and reusable. Can be written in C++, Python, or other languages.'
+                },
+                topics: {
+                    title: 'Topics: Data Streams',
+                    description: 'Topics are named channels for one-way, real-time data streaming. A node "publishes" data to a topic, and any number of other nodes can "subscribe" to receive that data.',
+                    usecase: 'Continuously broadcasting laser scans, camera images, or robot position.',
+                    trait: 'Asynchronous, high-frequency data flow. Best for continuous information.'
+                },
+                services: {
+                    title: 'Services: Request & Response',
+                    description: 'Services provide a synchronous request-response interaction. A "client" node sends a request and waits for a "server" node to perform a task and return a result.',
+                    usecase: 'Querying for the current battery level, triggering a one-time command like "take off".',
+                    trait: 'Blocking (client waits for response). Best for quick, on-demand tasks.'
+                },
+                actions: {
+                    title: 'Actions: Long-Running Tasks',
+                    description: 'Actions are for long-running, goal-oriented tasks. Unlike services, they provide continuous feedback on their progress and can be cancelled mid-execution.',
+                    usecase: 'Navigating to a waypoint, commanding a robot arm to pick up an object.',
+                    trait: 'Asynchronous with feedback and cancellation. Built on underlying topics and services.'
+                },
+                parameters: {
+                    title: 'Parameters: Runtime Configuration',
+                    description: 'Parameters are configuration values that nodes can access and modify at runtime. This allows for tuning a robot\'s behavior without recompiling code.',
+                    usecase: 'Setting a robot\'s maximum speed, sensor calibration values, or detection thresholds.',
+                    trait: 'Flexible runtime configuration. Can be set from launch files or changed dynamically.'
+                },
+                discovery: {
+                    title: 'Discovery: Finding Each Other',
+                    description: 'ROS 2 uses a distributed discovery mechanism (via DDS) where nodes automatically find each other on the network. There is no central master like in ROS 1.',
+                    usecase: 'A new sensor node starts up and immediately begins publishing data that a logging node can see and subscribe to.',
+                    trait: 'Decentralized and resilient. Relies on compatible QoS settings and the same ROS_DOMAIN_ID.'
+                }
+            };
+
+            const packageData = [
+                {
+                    name: 'Navigation2 (Nav2)',
+                    domain: 'Autonomous Navigation',
+                    description: 'The standard framework for mobile robot navigation. Its modular design, utilizing Behavior Trees, offers enhanced flexibility and deterministic behavior compared to ROS 1\'s monolithic approach.',
+                    tools: 'map_server, amcl, nav2_planner, nav2_controller, bt_navigator, lifecycle_manager.',
+                    importance: 'Enables robots to move from point A to B autonomously, handling path planning, obstacle avoidance, and recovery from failures.'
+                },
+                {
+                    name: 'MoveIt 2',
+                    domain: 'Robotic Manipulation',
+                    description: 'Essential for controlling robotic arms. It leverages ROS 2\'s real-time features for reactive control and its Task Constructor simplifies complex, multi-stage manipulation tasks.',
+                    tools: 'move_group node, MoveIt Task Constructor (MTC), RViz plugins.',
+                    importance: 'Solves complex motion planning problems, allowing robotic arms to move to desired poses without collisions.'
+                },
+                {
+                    name: 'SLAM Toolbox',
+                    domain: 'Localization & Mapping',
+                    description: 'Provides robust 2D mapping and localization capabilities. Its "lifelong mapping" feature is particularly valuable for long-term robot deployments in dynamic environments.',
+                    tools: 'SLAM Toolbox node, RViz plugin. Services: save_map, deserialize_map, reset.',
+                    importance: 'Allows a robot to build a map of an unknown environment while simultaneously tracking its own position within that map.'
+                },
+                {
+                    name: 'tf2',
+                    domain: 'Coordinate Transforms',
+                    description: 'Foundational for any multi-sensor or multi-body robot system. It ensures data consistency across different frames, making debugging coordinate frame issues a critical skill.',
+                    tools: 'static_transform_publisher, TransformBroadcaster, TransformListener.',
+                    importance: 'Manages the complex web of relationships between different coordinate systems on a robot (e.g., world, robot base, sensor frames).'
+                },
+                {
+                    name: 'Simulation Integration',
+                    domain: 'Simulation',
+                    description: 'Crucial for developing and testing robotics software without physical hardware. `ros2_control` provides a consistent interface for both simulated and real robots, abstracting hardware details. `ign_ros2_control` is the modern standard.',
+                    tools: 'gazebo_ros_pkgs, ign_ros2_control, ros2_control plugins.',
+                    importance: 'Provides the bridge to simulators like Gazebo, allowing for safe, repeatable, and cost-effective testing of robot software.'
+                },
+                {
+                    name: 'micro-ROS',
+                    domain: 'Embedded Systems',
+                    description: 'Bridges high-level ROS 2 control with low-level embedded hardware, enabling a unified robot software stack from high-level planning to embedded control.',
+                    tools: 'rclc (C client library), Micro-ROS Agent, Micro XRCE-DDS.',
+                    importance: 'Extends ROS 2 to resource-constrained microcontrollers, allowing small, low-power devices to become first-class citizens in the ROS ecosystem.'
+                }
+            ];
+            
+            const accordionData = [
+                {
+                    title: 'Environment Setup & Workflow',
+                    content: 'Always `source install/setup.bash` in every new terminal. This is the most common issue for beginners. Separate build and run terminals to avoid environment conflicts. Use modular launch files and `get_package_share_directory()` for portable paths. Rebuild with `colcon build` after adding new files or messages.'
+                },
+                {
+                    title: 'Communication Failures',
+                    content: 'Communication problems often appear silently. Check for three things first: 1) Exact matching topic/service names (including namespaces). 2) Compatible Quality of Service (QoS) settings between publishers and subscribers. 3) All nodes must be on the same `ROS_DOMAIN_ID` to discover each other.'
+                },
+                {
+                    title: 'Debugging Tools & Techniques',
+                    content: 'Use `ros2 node/topic/service` CLI tools for introspection. `RViz2` and `rqt_graph` are essential for visualization. Use log messages (`self.get_logger().info(...)`) generously. For complex bugs, `rosbag` is invaluable for recording and replaying data to reproduce issues reliably.'
+                },
+                {
+                    title: 'Avoiding Deadlocks in Python',
+                    content: 'A critical pitfall: never make a synchronous service call from within a callback (like a subscription or timer). This will freeze your node without an error. Always use the `call_async()` method for services to keep your node responsive.'
+                },
+                 {
+                    title: 'Understanding QoS (Quality of Service)',
+                    content: 'QoS is a powerful feature for tuning communication. Use "Best Effort" for high-frequency sensor data where losing a few messages is okay. Use "Reliable" for critical commands or services where every message must get through. Mismatched QoS is a common reason for nodes failing to connect.'
+                }
+            ];
+
+            const conceptSelector = document.getElementById('concept-selector');
+            const conceptTitle = document.getElementById('concept-title');
+            const conceptDescription = document.getElementById('concept-description');
+            const conceptUsecase = document.getElementById('concept-usecase');
+            const conceptTrait = document.getElementById('concept-trait');
+
+            conceptSelector.addEventListener('click', (e) => {
+                const button = e.target.closest('.concept-button');
+                if (!button) return;
+
+                document.querySelectorAll('.concept-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                const conceptId = button.dataset.concept;
+                const data = conceptData[conceptId];
+
+                conceptTitle.textContent = data.title;
+                conceptDescription.textContent = data.description;
+                conceptUsecase.textContent = data.usecase;
+                conceptTrait.textContent = data.trait;
+            });
+            
+            document.querySelector('.concept-button[data-concept="nodes"]').click();
+
+            const packageGrid = document.getElementById('package-grid');
+            const modal = document.getElementById('package-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalTools = document.getElementById('modal-tools');
+            const modalImportance = document.getElementById('modal-importance');
+            const modalClose = document.getElementById('modal-close');
+
+            packageData.forEach(pkg => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer';
+                card.innerHTML = `
+                    <h3 class="font-bold text-xl text-gray-800 mb-2">${pkg.name}</h3>
+                    <p class="text-indigo-600 font-medium mb-3">${pkg.domain}</p>
+                    <p class="text-gray-600 text-sm">${pkg.description.substring(0, 100)}...</p>
+                `;
+                card.addEventListener('click', () => {
+                    modalTitle.textContent = pkg.name;
+                    modalDescription.textContent = pkg.description;
+                    modalTools.textContent = pkg.tools;
+                    modalImportance.textContent = pkg.importance;
+                    modal.classList.remove('opacity-0', 'pointer-events-none');
+                    modal.querySelector('div > div').classList.remove('scale-95');
+                });
+                packageGrid.appendChild(card);
+            });
+
+            const closeModal = () => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                modal.querySelector('div > div').classList.add('scale-95');
+            };
+            modalClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            const accordionContainer = document.getElementById('accordion');
+            accordionData.forEach(item => {
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'bg-white border border-gray-200 rounded-lg';
+                accordionItem.innerHTML = `
+                    <button class="accordion-button w-full text-left p-4 font-semibold text-gray-700 hover:bg-gray-50 flex justify-between items-center transition-colors">
+                        <span>${item.title}</span>
+                        <span class="transform transition-transform duration-300 text-indigo-500 text-xl">+</span>
+                    </button>
+                    <div class="accordion-content">
+                        <p class="p-4 pt-0 text-gray-600">${item.content}</p>
+                    </div>
+                `;
+                accordionContainer.appendChild(accordionItem);
+            });
+
+            accordionContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.accordion-button');
+                if (button) {
+                    const wasActive = button.classList.contains('active');
+                    document.querySelectorAll('.accordion-button').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.querySelector('span:last-child').textContent = '+';
+                        btn.querySelector('span:last-child').classList.remove('rotate-45');
+                    });
+                    if (!wasActive) {
+                        button.classList.add('active');
+                        button.querySelector('span:last-child').textContent = '+';
+                        button.querySelector('span:last-child').classList.add('rotate-45');
+                    }
+                }
+            });
+
+            const ctx = document.getElementById('languageChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Performance (Low Latency)', 'Development Speed (Rapid Prototyping)'],
+                    datasets: [
+                        {
+                            label: 'C++',
+                            data: [90, 40],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Python',
+                            data: [50, 95],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%'
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Language Strengths in ROS 2'
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x + '% Aptitude';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-50% 0px -50% 0px" });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
