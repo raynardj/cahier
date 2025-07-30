@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Brain Health</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The SPA uses a thematic, card-based layout to present the 10 brain-boosting activities. The information is categorized into three intuitive groups: 'Body & Foundation', 'Mental Stimulation', and 'Emotional & Social Well-being'. This structure avoids a long, linear scroll and allows users to quickly navigate to areas of interest. The user flow is designed for discovery: users can explore activities by category or use a 'Benefit Filter' to find activities targeting specific goals (e.g., 'Improve Memory'). Clicking on an activity card reveals a detailed view with benefits, the science behind it, and practical tips. This interactive, non-linear approach was chosen to make the dense information from the report digestible, engaging, and personally relevant to the user, promoting exploration over passive reading. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: 10 brain-boosting activities and their benefits. -> Goal: Organize & Inform. -> Viz/Method: Interactive card grid (HTML/Tailwind/JS) with icons. -> Interaction: Click to expand details. -> Justification: Modern, scannable, and mobile-friendly way to present distinct topics. -> Library/Method: Vanilla JS for DOM manipulation.
+        - Report Info: MIND Diet recommendations (foods to encourage/limit). -> Goal: Compare & Inform. -> Viz/Method: Two horizontal bar charts (Chart.js). -> Interaction: Hover tooltips for details. -> Justification: Visually separates 'eat more' vs. 'eat less' and makes quantitative data easy to compare. -> Library/Method: Chart.js (Canvas).
+        - Report Info: Synergistic effects of activities on core cognitive domains. -> Goal: Show Relationships. -> Viz/Method: Radar chart (Chart.js). -> Interaction: Select an activity from a dropdown to dynamically update the chart. -> Justification: A radar chart is ideal for showing how a single activity impacts multiple metrics (Memory, Focus, etc.) simultaneously, reinforcing the holistic message. -> Library/Method: Chart.js (Canvas).
+        - Report Info: Activities linked to specific outcomes (e.g., stress reduction). -> Goal: Allow task-oriented exploration. -> Viz/Method: Filter buttons. -> Interaction: Click to highlight relevant activity cards. -> Justification: Empowers users to find solutions based on their personal needs, increasing engagement. -> Library/Method: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #3C3C3C;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #A8D8EA;
+            color: #3C3C3C;
+            font-weight: 600;
+        }
+        .activity-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+        }
+        .activity-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .filter-button.active {
+            background-color: #A8E6CF;
+            color: #3C3C3C;
+            font-weight: 600;
+        }
+        .hidden-section {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out;
+            visibility: hidden;
+        }
+        .visible-section {
+            max-height: 2000px;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Unlocking Your Brain's Potential</h1>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">This guide translates scientific research into an interactive experience. Explore ten proven activities to enhance cognitive function, build resilience, and foster a healthier, sharper mind through a holistic lifestyle.</p>
+        </header>
+
+        <nav class="flex justify-center space-x-2 md:space-x-4 mb-12">
+            <button data-target="introduction" class="nav-button active text-sm md:text-base px-4 py-2 rounded-full bg-white shadow-sm">Introduction</button>
+            <button data-target="activities" class="nav-button text-sm md:text-base px-4 py-2 rounded-full bg-white shadow-sm">10 Activities</button>
+            <button data-target="synergy" class="nav-button text-sm md:text-base px-4 py-2 rounded-full bg-white shadow-sm">Synergy</button>
+            <button data-target="diet" class="nav-button text-sm md:text-base px-4 py-2 rounded-full bg-white shadow-sm">MIND Diet</button>
+        </nav>
+
+        <main>
+            <section id="introduction" class="p-8 bg-white rounded-2xl shadow-lg mb-12">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">The Power of Neuroplasticity</h2>
+                <p class="text-gray-700 mb-4">Your brain is not a static organ; it possesses a remarkable ability to change and adapt throughout your life—a phenomenon called **neuroplasticity**. This means you can actively improve your brain's functionality. The activities in this guide are not "quick fixes" but scientifically validated lifestyle choices that promote the formation of new neural connections, enhance cognitive skills like memory and focus, and build a resilient "cognitive reserve" against age-related decline.</p>
+                <p class="text-gray-700">The goal is to move beyond a simple checklist and embrace a holistic approach. By integrating these practices, you create a powerful, synergistic effect that amplifies the benefits, leading to a sharper, more vibrant mind. This interactive tool is designed to help you explore these strategies, understand the science behind them, and find practical ways to incorporate them into your life.</p>
+            </section>
+            
+            <section id="activities" class="hidden-section">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Explore the 10 Activities</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">Filter activities by the benefit you're most interested in, or explore them by category. Click on any card to reveal detailed information.</p>
+                </div>
+                <div class="flex justify-center flex-wrap gap-2 mb-10">
+                    <button class="filter-button active px-4 py-2 text-sm rounded-full bg-white shadow-sm transition" data-filter="all">All Benefits</button>
+                    <button class="filter-button px-4 py-2 text-sm rounded-full bg-white shadow-sm transition" data-filter="memory">Improve Memory</button>
+                    <button class="filter-button px-4 py-2 text-sm rounded-full bg-white shadow-sm transition" data-filter="focus">Enhance Focus</button>
+                    <button class="filter-button px-4 py-2 text-sm rounded-full bg-white shadow-sm transition" data-filter="stress">Reduce Stress</button>
+                    <button class="filter-button px-4 py-2 text-sm rounded-full bg-white shadow-sm transition" data-filter="resilience">Build Resilience</button>
+                </div>
+
+                <div id="activities-grid" class="space-y-10"></div>
+            </section>
+
+            <section id="synergy" class="hidden-section p-8 bg-white rounded-2xl shadow-lg mb-12">
+                 <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">The Synergy of a Healthy Lifestyle</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">While each activity is beneficial on its own, their true power lies in their combined effect. This chart visualizes how different activities contribute to core areas of brain health. Select an activity to see its unique "benefit footprint" and discover how they work together to support overall cognitive vitality.</p>
+                </div>
+                <div class="flex justify-center mb-6">
+                    <select id="synergy-selector" class="p-2 border rounded-lg shadow-sm bg-white"></select>
+                </div>
+                <div class="chart-container h-[40vh] md:h-96 max-h-[450px]">
+                    <canvas id="synergyChart"></canvas>
+                </div>
+            </section>
+
+            <section id="diet" class="hidden-section p-8 bg-white rounded-2xl shadow-lg mb-12">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">The MIND Diet: Eating for Brain Health</h2>
+                    <p class="text-gray-600 max-w-2xl mx-auto">The MIND diet is scientifically designed to protect the aging brain. It focuses on increasing intake of brain-healthy foods and limiting those that can be harmful. These charts show the recommended servings for each food group to help you nourish your neural networks effectively.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold text-center mb-4 text-green-700">Foods to Encourage</h3>
+                        <div class="chart-container h-96 max-h-[500px]">
+                            <canvas id="mindDietEncourageChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold text-center mb-4 text-red-700">Foods to Limit</h3>
+                        <div class="chart-container h-96 max-h-[500px]">
+                             <canvas id="mindDietLimitChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const appData = {
+            activities: [
+                {
+                    id: 'exercise',
+                    title: 'Regular Physical Exercise',
+                    icon: '🏃',
+                    category: 'Body & Foundation',
+                    tagline: 'Fueling your brain\'s engine for growth and efficiency.',
+                    benefits: ['Improved memory & attention', 'Reduced cognitive decline', 'Enhanced problem-solving'],
+                    science: 'Boosts Brain-Derived Neurotrophic Factor (BDNF) for neuron growth, increases blood flow, and improves insulin sensitivity in the brain, promoting neuroplasticity.',
+                    howto: 'Aim for 150 mins of moderate activity (like brisk walking) or 75 mins of vigorous activity weekly. Include aerobic, strength, and balance exercises.',
+                    filters: ['memory', 'focus', 'resilience', 'stress']
+                },
+                {
+                    id: 'diet',
+                    title: 'Brain-Healthy Diet',
+                    icon: '🥗',
+                    category: 'Body & Foundation',
+                    tagline: 'Nourishing your neural networks to fight decline.',
+                    benefits: ['Slower cognitive decline', 'Reduced Alzheimer\'s risk', 'Improved mental clarity'],
+                    science: 'Provides antioxidants and anti-inflammatory compounds (flavonoids, Omega-3s) that protect brain cells from damage caused by oxidative stress.',
+                    howto: 'Follow the MIND diet principles: prioritize leafy greens, berries, nuts, olive oil, whole grains, fish, and beans. Limit red meat, sweets, and fried foods.',
+                    filters: ['memory', 'resilience']
+                },
+                {
+                    id: 'sleep',
+                    title: 'Quality Sleep',
+                    icon: '😴',
+                    category: 'Body & Foundation',
+                    tagline: 'Restoring and reorganizing your mind for peak performance.',
+                    benefits: ['Enhanced memory consolidation', 'Improved focus & alertness', 'Better emotional regulation'],
+                    science: 'During sleep, the brain clears metabolic waste, consolidates memories from short-term to long-term storage, and restores neurotransmitter balance.',
+                    howto: 'Aim for 7+ hours of quality sleep per night. Maintain a consistent sleep schedule and create a relaxing, screen-free bedtime routine.',
+                    filters: ['memory', 'focus', 'stress', 'resilience']
+                },
+                {
+                    id: 'learning',
+                    title: 'Lifelong Learning',
+                    icon: '🧠',
+                    category: 'Mental Stimulation',
+                    tagline: 'Sculpting your brain by embracing novel challenges.',
+                    benefits: ['Builds cognitive reserve', 'Enhanced neuroplasticity', 'Improved focus & memory'],
+                    science: 'Engaging in new and complex tasks forces the brain to form and strengthen synaptic connections, improving cognitive flexibility and efficiency.',
+                    howto: 'Learn a new language or musical instrument. Take a course on an unfamiliar subject. Choose hobbies that challenge your mind.',
+                    filters: ['memory', 'focus', 'resilience']
+                },
+                {
+                    id: 'puzzles',
+                    title: 'Puzzles & Games',
+                    icon: '🧩',
+                    category: 'Mental Stimulation',
+                    tagline: 'Targeted workouts to sharpen specific cognitive skills.',
+                    benefits: ['Improved short-term memory', 'Enhanced visual-spatial reasoning', 'Stress relief'],
+                    science: 'Reinforces connections between brain cells and triggers the release of dopamine, a neurotransmitter linked to motivation, memory, and concentration.',
+                    howto: 'Incorporate a variety of puzzles like crosswords, Sudoku, and jigsaws into your routine. Choose challenges that are engaging but not overly frustrating.',
+                    filters: ['memory', 'focus', 'stress']
+                },
+                {
+                    id: 'reading',
+                    title: 'Regular Reading',
+                    icon: '📚',
+                    category: 'Mental Stimulation',
+                    tagline: 'A comprehensive workout for your mind\'s eye.',
+                    benefits: ['Improved concentration & vocabulary', 'Enhanced memory', 'Significant stress reduction'],
+                    science: 'Reading stimulates complex neural circuits, enhances connectivity, and improves "theory of mind." The tactile experience of a physical book can boost memory encoding.',
+                    howto: 'Make reading a regular habit, prioritizing physical books. Practice "slow-reading" for 30-45 minutes without digital distractions for deep engagement.',
+                    filters: ['memory', 'focus', 'stress']
+                },
+                {
+                    id: 'meditation',
+                    title: 'Mindfulness & Meditation',
+                    icon: '🧘',
+                    category: 'Emotional & Social Well-being',
+                    tagline: 'Cultivating mental clarity and emotional resilience.',
+                    benefits: ['Improved attention & focus', 'Reduced stress & anxiety', 'Enhanced memory recall'],
+                    science: 'Modulates brain wave activity (increasing alpha waves for relaxed alertness), regulates the stress hormone cortisol, and balances neurotransmitters.',
+                    howto: 'Start with a short, daily practice of a few minutes. Explore guided meditation apps or techniques to find what works best for you.',
+                    filters: ['focus', 'stress', 'resilience']
+                },
+                {
+                    id: 'social',
+                    title: 'Strong Social Connections',
+                    icon: '💬',
+                    category: 'Emotional & Social Well-being',
+                    tagline: 'The essential workout for our inherently social brains.',
+                    benefits: ['Reduced dementia risk', 'Stimulates cognitive function', 'Improved mood & mental health'],
+                    science: 'Meaningful social interaction triggers the release of beneficial neurotransmitters like oxytocin and dopamine, strengthening neural networks and buffering against decline.',
+                    howto: 'Actively schedule time with friends and family. Join clubs, volunteer, or take group classes. Combine social activity with physical movement for extra benefits.',
+                    filters: ['resilience', 'stress']
+                },
+                {
+                    id: 'creative',
+                    title: 'Creative Pursuits',
+                    icon: '🎨',
+                    category: 'Emotional & Social Well-being',
+                    tagline: 'The art of building brain resilience and well-being.',
+                    benefits: ['Builds cognitive reserve', 'Reduces stress', 'Fosters emotional expression'],
+                    science: 'Activates multiple brain regions simultaneously, promoting neuroplasticity. The sense of accomplishment releases dopamine, enhancing mood and motivation.',
+                    howto: 'Explore painting, journaling, playing music, gardening, or crafting. The goal is engagement and enjoyment, not perfection.',
+                    filters: ['focus', 'stress', 'resilience']
+                },
+                {
+                    id: 'stress_management',
+                    title: 'Effective Stress Management',
+                    icon: '🌿',
+                    category: 'Body & Foundation',
+                    tagline: 'Protecting your brain from the damage of chronic overload.',
+                    benefits: ['Clearer thinking & decision-making', 'Protects memory function', 'Promotes emotional balance'],
+                    science: 'Reduces levels of the neurotoxic stress hormone cortisol, balances neurotransmitters, and decreases inflammation, creating an optimal environment for brain function.',
+                    howto: 'Integrate other brain-boosting activities that are proven stress-reducers, such as exercise, meditation, creative pursuits, and social connection.',
+                    filters: ['memory', 'focus', 'stress', 'resilience']
+                }
+            ],
+            synergyData: {
+                labels: ['Memory', 'Focus', 'Stress Reduction', 'Resilience', 'Neuroplasticity'],
+                datasets: {
+                    exercise: [4, 4, 4, 5, 5],
+                    diet: [4, 2, 2, 4, 3],
+                    sleep: [5, 5, 4, 4, 4],
+                    learning: [4, 5, 2, 4, 5],
+                    puzzles: [4, 4, 3, 2, 3],
+                    reading: [4, 4, 4, 2, 4],
+                    meditation: [3, 5, 5, 4, 3],
+                    social: [3, 2, 4, 5, 3],
+                    creative: [2, 4, 4, 4, 4],
+                    stress_management: [4, 4, 5, 5, 3]
+                }
+            },
+            mindDietData: {
+                encourage: {
+                    labels: ['Leafy Greens (servings/wk)', 'Other Veggies (servings/day)', 'Berries (servings/wk)', 'Nuts (servings/wk)', 'Whole Grains (servings/day)', 'Fish (servings/wk)', 'Beans (meals/wk)', 'Poultry (servings/wk)'],
+                    data: [6, 1, 2, 5, 3, 1, 4, 2]
+                },
+                limit: {
+                    labels: ['Pastries/Sweets (servings/wk)', 'Red Meat (servings/wk)', 'Cheese (servings/wk)', 'Fried Foods (servings/wk)', 'Butter/Margarine (Tbsp/day)'],
+                    data: [5, 4, 1, 1, 1]
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const activitiesGrid = document.getElementById('activities-grid');
+            const synergySelector = document.getElementById('synergy-selector');
+            const navButtons = document.querySelectorAll('.nav-button');
+            const sections = document.querySelectorAll('main > section');
+            const filterButtons = document.querySelectorAll('.filter-button');
+
+            const categories = [...new Set(appData.activities.map(a => a.category))];
+            
+            function createActivityCard(activity) {
+                const benefitsList = activity.benefits.map(b => `<li class="text-sm text-gray-600">${b}</li>`).join('');
+                return `
+                    <div class="activity-card bg-white rounded-2xl shadow-lg overflow-hidden cursor-pointer" data-id="${activity.id}" data-filters='${JSON.stringify(activity.filters)}'>
+                        <div class="p-6 flex items-center space-x-6">
+                            <div class="text-5xl">${activity.icon}</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${activity.title}</h3>
+                                <p class="text-gray-500">${activity.tagline}</p>
+                            </div>
+                        </div>
+                        <div id="details-${activity.id}" class="hidden-section bg-gray-50 px-6 py-4 border-t border-gray-200">
+                             <div class="grid md:grid-cols-3 gap-6">
+                                <div>
+                                    <h4 class="font-semibold mb-2">Key Benefits</h4>
+                                    <ul class="list-disc list-inside space-y-1">${benefitsList}</ul>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-2">The Science</h4>
+                                    <p class="text-sm text-gray-600">${activity.science}</p>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold mb-2">How to Start</h4>
+                                    <p class="text-sm text-gray-600">${activity.howto}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderActivities() {
+                activitiesGrid.innerHTML = '';
+                categories.forEach(category => {
+                    const categoryWrapper = document.createElement('div');
+                    categoryWrapper.innerHTML = `<h2 class="text-2xl font-bold text-gray-700 mb-4 pl-2">${category}</h2>`;
+                    const categoryGrid = document.createElement('div');
+                    categoryGrid.className = 'grid md:grid-cols-2 gap-6';
+                    
+                    appData.activities.filter(a => a.category === category).forEach(activity => {
+                        categoryGrid.innerHTML += createActivityCard(activity);
+                    });
+                    
+                    categoryWrapper.appendChild(categoryGrid);
+                    activitiesGrid.appendChild(categoryWrapper);
+                });
+
+                document.querySelectorAll('.activity-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const detailsId = `details-${card.dataset.id}`;
+                        const detailsElement = document.getElementById(detailsId);
+                        detailsElement.classList.toggle('visible-section');
+                    });
+                });
+            }
+
+            function handleNavClick(e) {
+                const targetId = e.target.dataset.target;
+                
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+
+                sections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.add('visible-section');
+                        section.classList.remove('hidden-section');
+                    } else {
+                        section.classList.remove('visible-section');
+                        section.classList.add('hidden-section');
+                    }
+                });
+            }
+
+            function handleFilterClick(e) {
+                const filter = e.target.dataset.filter;
+                
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+
+                document.querySelectorAll('.activity-card').forEach(card => {
+                    const cardFilters = JSON.parse(card.dataset.filters);
+                    if (filter === 'all' || cardFilters.includes(filter)) {
+                        card.style.opacity = '1';
+                        card.style.pointerEvents = 'auto';
+                    } else {
+                        card.style.opacity = '0.4';
+                        card.style.pointerEvents = 'none';
+                    }
+                });
+            }
+
+            navButtons.forEach(btn => btn.addEventListener('click', handleNavClick));
+            filterButtons.forEach(btn => btn.addEventListener('click', handleFilterClick));
+
+            let synergyChart, mindEncourageChart, mindLimitChart;
+
+            function createSynergyChart() {
+                const ctx = document.getElementById('synergyChart').getContext('2d');
+                synergyChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: appData.synergyData.labels,
+                        datasets: [{
+                            label: 'Benefit Score',
+                            data: [],
+                            backgroundColor: 'rgba(168, 216, 234, 0.2)',
+                            borderColor: 'rgba(168, 216, 234, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(168, 216, 234, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(168, 216, 234, 1)'
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 5,
+                                pointLabels: {
+                                    font: { size: 12 }
+                                },
+                                ticks: {
+                                    stepSize: 1,
+                                    backdropColor: 'rgba(0,0,0,0)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            function updateSynergyChart(activityId) {
+                const data = appData.synergyData.datasets[activityId];
+                synergyChart.data.datasets[0].data = data;
+                synergyChart.update();
+            }
+
+            function populateSynergySelector() {
+                appData.activities.forEach(activity => {
+                    const option = document.createElement('option');
+                    option.value = activity.id;
+                    option.textContent = activity.title;
+                    synergySelector.appendChild(option);
+                });
+                synergySelector.addEventListener('change', (e) => updateSynergyChart(e.target.value));
+            }
+            
+            function createMindDietCharts() {
+                const encourageCtx = document.getElementById('mindDietEncourageChart').getContext('2d');
+                const limitCtx = document.getElementById('mindDietLimitChart').getContext('2d');
+                
+                const commonOptions = {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x + ' servings';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
+                    }
+                };
+
+                mindEncourageChart = new Chart(encourageCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: appData.mindDietData.encourage.labels,
+                        datasets: [{
+                            label: 'Recommended Servings',
+                            data: appData.mindDietData.encourage.data,
+                            backgroundColor: '#A8E6CF',
+                            borderColor: '#6EE7B7',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: commonOptions
+                });
+
+                mindLimitChart = new Chart(limitCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: appData.mindDietData.limit.labels,
+                        datasets: [{
+                            label: 'Max Servings',
+                            data: appData.mindDietData.limit.data,
+                            backgroundColor: '#FFD3B6',
+                            borderColor: '#FFB48A',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: commonOptions
+                });
+            }
+
+            function initializeApp() {
+                renderActivities();
+                createSynergyChart();
+                populateSynergySelector();
+                updateSynergyChart(appData.activities[0].id);
+                createMindDietCharts();
+                document.querySelector('.nav-button[data-target="introduction"]').click();
+            }
+
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
