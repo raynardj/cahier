@@ -9,3 +9,4 @@ Researches too lazy to do by myself
 * [Analytical Reading List](analytical-reading.html)
 * [Embedding Superposition](embedding-superposition.html)
 * [ROS2 Modules](ros2-modules.html)
+* [Improve Brain](improve-brain.html)
