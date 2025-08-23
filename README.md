@@ -10,3 +10,4 @@ Researches too lazy to do by myself
 * [Embedding Superposition](embedding-superposition.html)
 * [ROS2 Modules](ros2-modules.html)
 * [Improve Brain](improve-brain.html)
+* [Moral Entropy](moral-entropy.html) How surprise is your moral, or you don't spare much thought to travel outside of your demographic stereotype.
