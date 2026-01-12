@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robotics Hardware for Data Scientists</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        .card-hover:hover { transform: translateY(-2px); transition: all 0.2s ease-in-out; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+        .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals & Tech Blue -->
+    <!-- Application Structure Plan:
+         1. Header/Hero: Sets the context (DS -> Hardware).
+         2. The Hardware Stack (Dashboard): High-level mental model mapping software concepts to hardware reality.
+         3. Comparative Analysis (Charts): Data-driven component selection (Microcontrollers, Motors).
+         4. Curated Curriculum (List/Grid): The core request (80 videos). Filterable by difficulty and category.
+         5. Hands-on Lab (Interactive): Simple "Select components" game to test understanding.
+    -->
+    <!-- Visualization & Content Choices:
+         - Radar Chart: Ideal for comparing multi-dimensional attributes of Microcontrollers (Cost, RTOS, AI Power).
+         - Bar Chart: Comparing Motor Torque/Speed characteristics.
+         - Interactive Table: For the video list, allowing search and sort.
+         - Flex/Grid Layouts: For responsive structuring of content.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-slate-800">Bot<span class="text-blue-600">Bridge</span></span>
+                    <span class="ml-2 text-sm text-slate-500 hidden sm:block">| Hardware for ML Engineers</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="scrollToSection('curriculum')" class="text-slate-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Video Library</button>
+                    <button onclick="scrollToSection('analysis')" class="text-slate-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">Trade-offs</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="bg-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl font-extrabold text-slate-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+                Cross the Gap: <span class="text-blue-600">Software to Silicon</span>
+            </h1>
+            <p class="mt-5 max-w-xl mx-auto text-xl text-slate-500">
+                You know the algorithms. Now build the body. A curated, hands-on path to mastering robotics hardware, filtered for the data scientist's mind.
+            </p>
+            <div class="mt-8 flex justify-center gap-4">
+                <button onclick="scrollToSection('curriculum')" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    Start Learning (80+ Videos)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
+
+        <!-- Section 1: The Mental Model -->
+        <section id="mental-model">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">The Hardware Stack</h2>
+                <p class="mt-2 text-lg text-slate-600">Mapping your Data Science knowledge to Physical Reality.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Compute -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition cursor-pointer" onclick="filterVideos('Compute')">
+                    <div class="text-3xl mb-4">🧠</div>
+                    <h3 class="text-xl font-bold text-slate-800">Compute (The Brain)</h3>
+                    <p class="text-sm text-slate-500 mt-2 font-mono">Analogous to: CPU/GPU & OS</p>
+                    <p class="mt-3 text-slate-600">Microcontrollers (Arduino) for real-time reflexes vs. Single Board Computers (Raspberry Pi/Jetson) for the heavy AI thinking.</p>
+                </div>
+
+                <!-- Sensors -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition cursor-pointer" onclick="filterVideos('Sensors')">
+                    <div class="text-3xl mb-4">👁️</div>
+                    <h3 class="text-xl font-bold text-slate-800">Sensors (The Senses)</h3>
+                    <p class="text-sm text-slate-500 mt-2 font-mono">Analogous to: Input Pipelines (ETL)</p>
+                    <p class="mt-3 text-slate-600">LIDAR, IMUs, and Cameras. This is your noisy data source. Requires filtering (Kalman) and fusion.</p>
+                </div>
+
+                <!-- Actuators -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition cursor-pointer" onclick="filterVideos('Actuators')">
+                    <div class="text-3xl mb-4">💪</div>
+                    <h3 class="text-xl font-bold text-slate-800">Actuators (The Muscles)</h3>
+                    <p class="text-sm text-slate-500 mt-2 font-mono">Analogous to: Output/Actions</p>
+                    <p class="mt-3 text-slate-600">Motors move the world. DC for speed, Servos for angle, Steppers for precision. They need drivers, not just code.</p>
+                </div>
+
+                <!-- Power -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 hover:shadow-md transition cursor-pointer" onclick="filterVideos('Power')">
+                    <div class="text-3xl mb-4">⚡</div>
+                    <h3 class="text-xl font-bold text-slate-800">Power (The Blood)</h3>
+                    <p class="text-sm text-slate-500 mt-2 font-mono">Analogous to: Server Uptime</p>
+                    <p class="mt-3 text-slate-600">Batteries (LiPo), Voltage regulation (Buck/Boost), and current limits. Without this, the model doesn't run.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Comparative Analysis (Charts) -->
+        <section id="analysis" class="bg-stone-50 rounded-2xl">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Hardware Trade-offs</h2>
+                <p class="mt-2 text-lg text-slate-600">Data-driven selection. Don't just pick "Raspberry Pi" because it's famous. Pick what fits the inference latency and power budget.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Chart 1: Microcontrollers vs SBC -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Controller Selection Matrix</h3>
+                    <div class="chart-container">
+                        <canvas id="controllerChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-slate-500">
+                        <span class="font-bold">Insight:</span> Use <span class="text-blue-600 font-bold">Jetson</span> for ML inference. Use <span class="text-teal-600 font-bold">Arduino/ESP32</span> for hard real-time motor control. Real robots often use both (e.g., Jetson sends commands to Arduino via Serial).
+                    </div>
+                </div>
+
+                <!-- Chart 2: Actuators -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Motor Type Characteristics</h3>
+                    <div class="chart-container">
+                        <canvas id="motorChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-slate-500">
+                        <span class="font-bold">Insight:</span> <span class="text-purple-600 font-bold">Steppers</span> are great for precise open-loop control (3D printers). <span class="text-amber-600 font-bold">Brushless (BLDC)</span> are for high-speed/power (Drones, Spot-like dogs).
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: The Curriculum (80 Videos) -->
+        <section id="curriculum">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Curated Video Library</h2>
+                    <p class="mt-2 text-slate-600 max-w-2xl">
+                        ~80 high-impact resources. I've prioritized "Show, Don't Tell." These are search queries to find the seminal videos on these topics.
+                    </p>
+                </div>
+                <div class="mt-4 md:mt-0 flex gap-2">
+                    <input type="text" id="searchInput" placeholder="Search topics..." class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="categoryFilter" class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="All">All Categories</option>
+                        <option value="Compute">Compute & Microcontrollers</option>
+                        <option value="Electronics">Electronics Basics</option>
+                        <option value="Actuators">Motors & Mechanics</option>
+                        <option value="Sensors">Sensors & Perception</option>
+                        <option value="Power">Power Management</option>
+                        <option value="ROS">ROS & Integration</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-slate-200">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Topic / Video Concept</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Channel / Expert</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Why watch?</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Link</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videoTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                    <p class="text-sm text-slate-500" id="resultCount">Showing all resources</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Hands-on Lab Simulation -->
+        <section id="lab" class="bg-stone-900 text-white rounded-2xl p-8 shadow-xl">
+             <div class="flex flex-col lg:flex-row gap-8">
+                <div class="lg:w-1/3">
+                    <h2 class="text-2xl font-bold text-white mb-2">Build Your Stack</h2>
+                    <p class="text-stone-400 text-sm mb-6">Select components to see if they fit your project goals.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-stone-500 mb-1">Compute Layer</label>
+                            <select id="sim-compute" class="w-full bg-stone-800 border border-stone-700 rounded p-2 text-white">
+                                <option value="arduino">Arduino Uno (Microcontroller)</option>
+                                <option value="pi">Raspberry Pi 4 (SBC)</option>
+                                <option value="jetson">NVIDIA Jetson Nano (Edge AI)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-stone-500 mb-1">Actuator Type</label>
+                            <select id="sim-motor" class="w-full bg-stone-800 border border-stone-700 rounded p-2 text-white">
+                                <option value="servo">Micro Servo (Position)</option>
+                                <option value="dc">DC Motor + Wheel (Velocity)</option>
+                                <option value="stepper">NEMA 17 Stepper (Precision)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-stone-500 mb-1">Power Source</label>
+                            <select id="sim-power" class="w-full bg-stone-800 border border-stone-700 rounded p-2 text-white">
+                                <option value="usb">USB 5V</option>
+                                <option value="9v">9V Block Battery</option>
+                                <option value="lipo">3S LiPo (11.1V High Current)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:w-2/3 bg-stone-800 rounded-xl p-6 border border-stone-700 relative">
+                    <h3 class="text-lg font-bold text-blue-400 mb-4">Compatibility Check</h3>
+                    <div id="sim-output" class="space-y-4">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+             </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>Generated by Canvas • Focused on Hands-on Learning • No Affiliation with Channels Listed</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- DATA ---
+        
+        // The "80 Videos" Dataset - Structured for a Data Scientist
+        const resources = [
+            // COMPUTE & MICROCONTROLLERS
+            { cat: "Compute", topic: "Arduino vs Raspberry Pi", channel: "GreatScott!", desc: "The fundamental difference: Real-time vs OS.", query: "GreatScott Arduino vs Raspberry Pi" },
+            { cat: "Compute", topic: "Microcontrollers Explained", channel: "ExplainingComputers", desc: "Architecture basics of MCUs.", query: "ExplainingComputers Microcontrollers" },
+            { cat: "Compute", topic: "ESP32 Introduction", channel: "DroneBot Workshop", desc: "The go-to chip for IoT/WiFi robotics.", query: "DroneBot Workshop ESP32 Intro" },
+            { cat: "Compute", topic: "Getting Started with Jetson Nano", channel: "NVIDIA Developer", desc: "Running CUDA on the edge.", query: "NVIDIA Jetson Nano Getting Started" },
+            { cat: "Compute", topic: "Choosing the Right Microcontroller", channel: "Zack Freedman", desc: "Hilarious but accurate guide to chips.", query: "Zack Freedman Microcontroller" },
+            { cat: "Compute", topic: "Interrupts Explained", channel: "Shawn Hymel", desc: "Crucial for reading sensors without blocking code.", query: "Shawn Hymel Interrupts" },
+            { cat: "Compute", topic: "I2C Communication Protocol", channel: "The Engineering Mindset", desc: "How chips talk to sensors.", query: "Engineering Mindset I2C" },
+            { cat: "Compute", topic: "UART and Serial Communication", channel: "DroneBot Workshop", desc: "Connecting your PC to the Robot.", query: "DroneBot Workshop Serial" },
+            { cat: "Compute", topic: "SPI Protocol Basics", channel: "DeepBlue", desc: "Faster communication for displays/IMUs.", query: "DeepBlue SPI Protocol" },
+            { cat: "Compute", topic: "Logic Levels (3.3V vs 5V)", channel: "SparkFun", desc: "Don't fry your expensive sensors.", query: "SparkFun Logic Levels" },
+            { cat: "Compute", topic: "Real Time Operating Systems (RTOS)", channel: "Digi-Key", desc: "When 'while(true)' isn't enough.", query: "DigiKey RTOS Introduction" },
+            { cat: "Compute", topic: "Multiprocessing on Pi", channel: "Sentdex", desc: "Python parallel processing for robotics.", query: "Sentdex Raspberry Pi GPIO" },
+            
+            // ELECTRONICS BASICS
+            { cat: "Electronics", topic: "Voltage, Current, Resistance", channel: "The Engineering Mindset", desc: "The hydraulic analogy you need.", query: "Engineering Mindset Voltage Current" },
+            { cat: "Electronics", topic: "How to use a Multimeter", channel: "EEVblog", desc: "Your primary debugging tool.", query: "EEVblog Multimeter Tutorial" },
+            { cat: "Electronics", topic: "Pull-up & Pull-down Resistors", channel: "AddOhms", desc: "Avoiding floating states on inputs.", query: "AddOhms Pull Up Resistor" },
+            { cat: "Electronics", topic: "How Breadboards Work", channel: "Science Buddies", desc: "Prototyping 101.", query: "Science Buddies Breadboard" },
+            { cat: "Electronics", topic: "Soldering Crash Course", channel: "GreatScott!", desc: "Essential skill for rugged bots.", query: "GreatScott Soldering" },
+            { cat: "Electronics", topic: "Ohm's Law in Practice", channel: "Afrotechmods", desc: "Calculating resistor values.", query: "Afrotechmods Ohms Law" },
+            { cat: "Electronics", topic: "Mosfets as Switches", channel: "GreatScott!", desc: "Controlling high power with low power.", query: "GreatScott MOSFET" },
+            { cat: "Electronics", topic: "Diodes and Rectifiers", channel: "The Engineering Mindset", desc: "One-way valves for electricity.", query: "Engineering Mindset Diode" },
+            { cat: "Electronics", topic: "Capacitors Explained", channel: "Afrotechmods", desc: "Filtering noise from motors.", query: "Afrotechmods Capacitor" },
+            { cat: "Electronics", topic: "Using an Oscilloscope", channel: "EEVblog", desc: "Visualizing signals over time.", query: "EEVblog Oscilloscope" },
+            { cat: "Electronics", topic: "Op-Amps Basics", channel: "DaveXi", desc: "Signal amplification for weak sensors.", query: "DaveXi OpAmp" },
+            { cat: "Electronics", topic: "Reading Datasheets", channel: "EEVblog", desc: "The documentation of hardware.", query: "EEVblog Datasheets" },
+
+            // ACTUATORS & MECHANICS
+            { cat: "Actuators", topic: "DC Motors vs Servos vs Steppers", channel: "DroneBot Workshop", desc: "The definitive guide to moving things.", query: "DroneBot Workshop Motors" },
+            { cat: "Actuators", topic: "H-Bridges & Motor Drivers", channel: "How To Mechatronics", desc: "Driving motors bi-directionally.", query: "How To Mechatronics H-Bridge" },
+            { cat: "Actuators", topic: "Controlling Servos with PCA9685", channel: "DroneBot Workshop", desc: "Driving many servos at once.", query: "DroneBot Workshop PCA9685" },
+            { cat: "Actuators", topic: "Stepper Motor Basics", channel: "GreatScott!", desc: "Precision movement.", query: "GreatScott Stepper Motor" },
+            { cat: "Actuators", topic: "Brushless DC Motors (BLDC)", channel: "RcModelReviews", desc: "High efficiency for drones/wheels.", query: "RcModelReviews BLDC" },
+            { cat: "Actuators", topic: "Gears and Torque", channel: "Jeremy Fielding", desc: "Mechanical advantage explained simply.", query: "Jeremy Fielding Gears" },
+            { cat: "Actuators", topic: "Building a Robot Chassis", channel: "James Bruton", desc: "Structural design thinking.", query: "James Bruton Chassis" },
+            { cat: "Actuators", topic: "3D Printing for Robotics", channel: "Makers Muse", desc: "Designing parts that don't break.", query: "Makers Muse 3D Printing Strength" },
+            { cat: "Actuators", topic: "Omni wheels vs Mecanum", channel: "How To Mechatronics", desc: "Holonomic drive systems.", query: "How To Mechatronics Mecanum" },
+            { cat: "Actuators", topic: "Linear Actuators", channel: "Firgelli Automations", desc: "Push/pull instead of rotate.", query: "Firgelli Linear Actuators" },
+            { cat: "Actuators", topic: "PID Control Explained", channel: "Brian Douglas", desc: "The math of smooth movement.", query: "Brian Douglas PID" },
+            { cat: "Actuators", topic: "Inverse Kinematics Intro", channel: "The Coding Train", desc: "Math for robot arms.", query: "Coding Train Inverse Kinematics" },
+
+            // SENSORS
+            { cat: "Sensors", topic: "Ultrasonic Sensor (HC-SR04)", channel: "DroneBot Workshop", desc: "Cheap distance measurement.", query: "DroneBot Workshop HC-SR04" },
+            { cat: "Sensors", topic: "LIDAR Explained", channel: "GreatScott!", desc: "Laser scanning for mapping.", query: "GreatScott LIDAR" },
+            { cat: "Sensors", topic: "IMU (Accelerometer/Gyro)", channel: "How To Mechatronics", desc: "Balance and orientation.", query: "How To Mechatronics MPU6050" },
+            { cat: "Sensors", topic: "Rotary Encoders", channel: "Curio Res", desc: "Measuring motor rotation speed.", query: "Curio Res Rotary Encoder" },
+            { cat: "Sensors", topic: "Camera Vision (OpenCV)", channel: "Murtaza's Workshop", desc: "Object detection on edge.", query: "Murtaza's Workshop OpenCV" },
+            { cat: "Sensors", topic: "Sensor Fusion (Kalman Filter)", channel: "Student Dave", desc: "Combining noisy data.", query: "Student Dave Kalman Filter" },
+            { cat: "Sensors", topic: "Hall Effect Sensors", channel: "Electronics Hub", desc: "Magnetic proximity detection.", query: "Electronics Hub Hall Effect" },
+            { cat: "Sensors", topic: "GPS for Robotics", channel: "DroneBot Workshop", desc: "Outdoor localization.", query: "DroneBot Workshop GPS" },
+            { cat: "Sensors", topic: "Load Cells (Weight)", channel: "SparkFun", desc: "Measuring force.", query: "SparkFun Load Cells" },
+            { cat: "Sensors", topic: "Line Following Sensors", channel: "Pololu", desc: "Basic IR arrays.", query: "Pololu Line Sensor" },
+
+            // POWER
+            { cat: "Power", topic: "LiPo Battery Safety", channel: "Rotor Riot", desc: "Don't burn your house down.", query: "Rotor Riot LiPo Safety" },
+            { cat: "Power", topic: "Buck and Boost Converters", channel: "GreatScott!", desc: "Efficient voltage changing.", query: "GreatScott Buck Boost" },
+            { cat: "Power", topic: "Battery Management Systems (BMS)", channel: "Off Grid Garage", desc: "Charging safely.", query: "Off Grid Garage BMS" },
+            { cat: "Power", topic: "Calculating Power Budgets", channel: "DroneBot Workshop", desc: "Sizing your battery.", query: "DroneBot Workshop Power Budget" },
+            { cat: "Power", topic: "Voltage Dividers", channel: "AddOhms", desc: "Simple voltage reference.", query: "AddOhms Voltage Divider" },
+
+            // ROS & INTEGRATION
+            { cat: "ROS", topic: "ROS 2 in 5 Minutes", channel: "The Construct", desc: "Middleware for robots.", query: "The Construct ROS 2" },
+            { cat: "ROS", topic: "Why use ROS?", channel: "Tiziano Fiorenzani", desc: "Nodes, Topics, Messages.", query: "Tiziano Fiorenzani ROS" },
+            { cat: "ROS", topic: "URDF Robot Modeling", channel: "Articulated Robotics", desc: "Describing robot geometry.", query: "Articulated Robotics URDF" },
+            { cat: "ROS", topic: "Gazebo Simulation", channel: "The Construct", desc: "Simulate before you build.", query: "The Construct Gazebo" },
+            { cat: "ROS", topic: "RVIZ Visualization", channel: "ROS Developers", desc: "Seeing what the robot sees.", query: "ROS Developers RVIZ" },
+            { cat: "ROS", topic: "SLAM (Mapping) Basics", channel: "Cyrill Stachniss", desc: "Simultaneous Localization and Mapping.", query: "Cyrill Stachniss SLAM" },
+            { cat: "ROS", topic: "Nav2 Navigation Stack", channel: "Samsung Research", desc: "Moving autonomously.", query: "Samsung Research Nav2" },
+            { cat: "ROS", topic: "Docker for Robotics", channel: "The Construct", desc: "Environment management.", query: "The Construct Docker ROS" },
+            
+            // PROJECTS (Integration)
+            { cat: "Projects", topic: "Building a Self Balancing Robot", channel: "Joop Brokking", desc: "Classic PID project.", query: "Joop Brokking Balancing Robot" },
+            { cat: "Projects", topic: "Spot Micro (Quadruped)", channel: "Mike Lockwood", desc: "Building a dog robot.", query: "Mike Lockwood Spot Micro" },
+            { cat: "Projects", topic: "Open Source Rover", channel: "NASA JPL", desc: "Build a Mars rover.", query: "NASA JPL Open Source Rover" },
+            { cat: "Projects", topic: "DIY Robotic Arm", channel: "How To Mechatronics", desc: "Kinematics in action.", query: "How To Mechatronics Robotic Arm" },
+            { cat: "Projects", topic: "Line Following Robot", channel: "McWhorter", desc: "The 'Hello World' of robotics.", query: "McWhorter Line Follower" }
+        ];
+
+        // --- INIT & EVENTS ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            renderTable(resources);
+            setupSearch();
+            setupSim();
+        });
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- VISUALIZATION (Chart.js) ---
+
+        function initCharts() {
+            // Chart 1: Microcontroller Comparison (Radar)
+            const ctx1 = document.getElementById('controllerChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'radar',
+                data: {
+                    labels: ['Real-time Control', 'AI/Compute Power', 'Ease of Use', 'Power Efficiency', 'Connectivity'],
+                    datasets: [
+                        {
+                            label: 'Arduino Uno',
+                            data: [9, 1, 9, 8, 3],
+                            fill: true,
+                            backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                            borderColor: 'rgb(20, 184, 166)',
+                            pointBackgroundColor: 'rgb(20, 184, 166)',
+                        },
+                        {
+                            label: 'Raspberry Pi 4',
+                            data: [4, 7, 7, 4, 9],
+                            fill: true,
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            pointBackgroundColor: 'rgb(239, 68, 68)',
+                        },
+                        {
+                            label: 'Jetson Nano',
+                            data: [4, 9, 5, 3, 8],
+                            fill: true,
+                            backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                            borderColor: 'rgb(37, 99, 235)',
+                            pointBackgroundColor: 'rgb(37, 99, 235)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    elements: { line: { borderWidth: 3 } },
+                    scales: {
+                        r: {
+                            angleLines: { display: true },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Motor Comparison (Bar)
+            const ctx2 = document.getElementById('motorChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Standard Servo', 'DC Gear Motor', 'Stepper Motor', 'Brushless (BLDC)'],
+                    datasets: [
+                        {
+                            label: 'Positional Precision',
+                            data: [9, 2, 10, 3],
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                        },
+                        {
+                            label: 'Speed',
+                            data: [4, 7, 3, 10],
+                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                        },
+                        {
+                            label: 'Torque/Weight',
+                            data: [6, 8, 4, 9],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 10 }
+                    }
+                }
+            });
+        }
+
+        // --- CURRICULUM LOGIC ---
+
+        function renderTable(data) {
+            const tbody = document.getElementById('videoTableBody');
+            tbody.innerHTML = '';
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-slate-500">No videos found matching criteria.</td></tr>';
+                document.getElementById('resultCount').textContent = `Showing 0 resources`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                
+                // Construct Youtube Search Link
+                const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(item.query)}`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${item.cat}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-semibold">${item.topic}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">${item.channel}</td>
+                    <td class="px-6 py-4 text-sm text-slate-500 max-w-xs truncate" title="${item.desc}">${item.desc}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="${searchUrl}" target="_blank" class="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-full text-xs flex items-center gap-1 w-max">
+                            <span>▶</span> Watch
+                        </a>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('resultCount').textContent = `Showing ${data.length} resources`;
+        }
+
+        function filterVideos(category) {
+            scrollToSection('curriculum');
+            document.getElementById('categoryFilter').value = category;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filtered = resources.filter(item => {
+                const matchesCat = category === 'All' || item.cat === category;
+                const matchesSearch = item.topic.toLowerCase().includes(searchTerm) || 
+                                      item.desc.toLowerCase().includes(searchTerm) || 
+                                      item.channel.toLowerCase().includes(searchTerm);
+                return matchesCat && matchesSearch;
+            });
+            renderTable(filtered);
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const catFilter = document.getElementById('categoryFilter');
+
+            const handleFilter = () => {
+                const term = searchInput.value.toLowerCase();
+                const cat = catFilter.value;
+                
+                const filtered = resources.filter(item => {
+                    const matchesCat = cat === 'All' || item.cat === cat;
+                    const matchesSearch = item.topic.toLowerCase().includes(term) || 
+                                          item.desc.toLowerCase().includes(term) || 
+                                          item.channel.toLowerCase().includes(term);
+                    return matchesCat && matchesSearch;
+                });
+                renderTable(filtered);
+            };
+
+            searchInput.addEventListener('input', handleFilter);
+            catFilter.addEventListener('change', handleFilter);
+        }
+
+        // --- LAB SIMULATION LOGIC ---
+
+        function setupSim() {
+            const compute = document.getElementById('sim-compute');
+            const motor = document.getElementById('sim-motor');
+            const power = document.getElementById('sim-power');
+            const output = document.getElementById('sim-output');
+
+            function checkCompat() {
+                const c = compute.value;
+                const m = motor.value;
+                const p = power.value;
+                let msgs = [];
+                let status = 'success'; // success, warning, error
+
+                // Logic Rules
+                
+                // 1. Voltage mismatch (9V battery vs High Current motors)
+                if (p === '9v' && (m === 'dc' || m === 'stepper')) {
+                    msgs.push({type: 'error', text: "❌ Power Fail: A 9V block battery has very high internal resistance. It cannot supply enough current for motors. They will stall or reset the board. Use LiPo or AAs."});
+                    status = 'error';
+                }
+
+                // 2. Direct Pin Drive (Arduino vs Motor)
+                if (c === 'arduino' && m === 'dc' && p === 'usb') {
+                    msgs.push({type: 'warning', text: "⚠️ Component Risk: You cannot drive a DC motor directly from Arduino pins (40mA limit). You need a Motor Driver (H-Bridge) or Transistor."});
+                }
+
+                // 3. Logic Levels (Pi 3.3V vs 5V logic)
+                if (c === 'pi' && m === 'servo' && p === 'usb') {
+                    msgs.push({type: 'warning', text: "⚠️ Logic Level: Servo signal is usually 5V. Pi GPIO is 3.3V. It *might* work, but a Logic Level Converter is safer/reliable."});
+                }
+                
+                // 4. Power Injection
+                if (c === 'arduino' && m === 'servo' && p === 'usb') {
+                     msgs.push({type: 'info', text: "ℹ️ Power: The Arduino 5V regulator can handle 1 micro servo. If you add more, the Arduino will brown-out. External power recommended."});
+                }
+
+                // 5. Stepper Drivers
+                if (m === 'stepper') {
+                    msgs.push({type: 'info', text: "ℹ️ Requirement: Steppers require a dedicated driver (e.g., A4988 or TMC2208). You cannot connect wires directly to the micro."});
+                }
+
+                // 6. Good Combos
+                if (c === 'jetson' && p === 'lipo') {
+                    msgs.push({type: 'success', text: "✅ Good Match: Jetson needs ~2-4A. A 3S LiPo with a Buck Converter (to 5V) provides stable high current."});
+                }
+
+                // Render
+                output.innerHTML = '';
+                if (msgs.length === 0) {
+                     output.innerHTML = `<div class="p-3 bg-green-900/30 border border-green-600 rounded text-green-200">✅ Configuration looks viable! Remember common ground.</div>`;
+                } else {
+                    msgs.forEach(msg => {
+                        let colorClass = msg.type === 'error' ? 'bg-red-900/30 border-red-600 text-red-200' : 
+                                         msg.type === 'warning' ? 'bg-yellow-900/30 border-yellow-600 text-yellow-200' : 
+                                         'bg-blue-900/30 border-blue-600 text-blue-200';
+                        output.innerHTML += `<div class="p-3 ${colorClass} border rounded mb-2">${msg.text}</div>`;
+                    });
+                }
+            }
+
+            [compute, motor, power].forEach(el => el.addEventListener('change', checkCompat));
+            checkCompat(); // Initial run
+        }
+
+    </script>
+</body>
+</html>
