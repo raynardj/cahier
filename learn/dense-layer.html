@@ -1,0 +1,371 @@
+import React, { useState, useMemo } from 'react';
+import { Terminal, Activity, GitGraph, Grid, ArrowRight } from 'lucide-react';
+
+// --- Constants & Config ---
+const INPUT_LABELS = [
+  "Has Whiskers",
+  "Catches Mice",
+  "Barks Loudly",
+  "Likes Bones",
+  "Climbs Trees"
+];
+
+const OUTPUT_LABELS = [
+  "Is Cat",
+  "Is Dog",
+  "Is Squirrel"
+];
+
+// Modernized Colors
+const COLOR_POS = "56, 189, 248"; // sky-400
+const COLOR_NEG = "248, 113, 113"; // red-400
+
+const generateWeights = (rows, cols) => {
+  const weights = [];
+  let seed = 42;
+  const random = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+
+  for (let i = 0; i < rows; i++) {
+    const row = [];
+    for (let j = 0; j < cols; j++) {
+      row.push(random() * 2 - 1); 
+    }
+    weights.push(row);
+  }
+  return weights;
+};
+
+const DenseLayerVisualizer = () => {
+  const [sliderVal, setSliderVal] = useState(0);
+  const t = sliderVal / 100;
+
+  const weights = useMemo(() => generateWeights(INPUT_LABELS.length, OUTPUT_LABELS.length), []);
+
+  // --- Geometry ---
+  const svgWidth = 800;
+  const svgHeight = 500;
+  
+  const graphInputX = 150;
+  const graphOutputX = 350;
+  const graphInputSpacing = 60;
+  const graphOutputSpacing = 80;
+  const graphCenterY = svgHeight / 2;
+
+  const matrixOriginX = 500;
+  const matrixOriginY = 150;
+  const cellSize = 50;
+
+  const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+  // 1. Calculate Input Positions
+  const inputs = INPUT_LABELS.map((label, i) => {
+    const startX = graphInputX;
+    const startY = graphCenterY - ((INPUT_LABELS.length - 1) * graphInputSpacing) / 2 + i * graphInputSpacing;
+
+    const endX = matrixOriginX - 24; 
+    const endY = matrixOriginY + i * cellSize + cellSize / 2;
+
+    return {
+      label,
+      currentX: lerp(startX, endX, t),
+      currentY: lerp(startY, endY, t),
+    };
+  });
+
+  // 2. Calculate Output Positions
+  const outputs = OUTPUT_LABELS.map((label, j) => {
+    const startX = graphOutputX;
+    const startY = graphCenterY - ((OUTPUT_LABELS.length - 1) * graphOutputSpacing) / 2 + j * graphOutputSpacing;
+
+    const endX = matrixOriginX + j * cellSize + cellSize / 2;
+    const endY = matrixOriginY - 24;
+
+    return {
+      label,
+      currentX: lerp(startX, endX, t),
+      currentY: lerp(startY, endY, t),
+      rotation: lerp(0, -45, t),
+    };
+  });
+
+  // 3. Calculate Connections
+  const connections = [];
+  weights.forEach((row, i) => {
+    row.forEach((weight, j) => {
+      const gIx = graphInputX;
+      const gIy = graphCenterY - ((INPUT_LABELS.length - 1) * graphInputSpacing) / 2 + i * graphInputSpacing;
+      
+      const gOx = graphOutputX;
+      const gOy = graphCenterY - ((OUTPUT_LABELS.length - 1) * graphOutputSpacing) / 2 + j * graphOutputSpacing;
+
+      const mX = matrixOriginX + j * cellSize;
+      const mY = matrixOriginY + i * cellSize;
+
+      const c1x = lerp(gIx, mX, t);
+      const c1y = lerp(gIy, mY, t);
+
+      const c2x = lerp(gOx, mX + cellSize - 3, t); // Slight gap for visual separation
+      const c2y = lerp(gOy, mY, t);
+
+      const c3x = lerp(gOx, mX + cellSize - 3, t);
+      const c3y = lerp(gOy, mY + cellSize - 3, t);
+
+      const c4x = lerp(gIx, mX, t);
+      const c4y = lerp(gIy, mY + cellSize - 3, t);
+
+      connections.push({
+        weight,
+        path: `M ${c1x},${c1y} L ${c2x},${c2y} L ${c3x},${c3y} L ${c4x},${c4y} Z`,
+        color: weight > 0 ? COLOR_POS : COLOR_NEG,
+        opacity: Math.abs(weight)
+      });
+    });
+  });
+
+  return (
+    <div className="flex flex-col items-center min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30">
+      
+      {/* --- Navbar / Header --- */}
+      <div className="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-tr from-cyan-500 to-blue-600 p-2 rounded-lg shadow-lg shadow-cyan-500/20">
+              <Activity size={20} className="text-white" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-white">
+              Linear<span className="text-slate-500">Viz</span>
+            </h1>
+          </div>
+          <div className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded">
+            TRANSFORMATION: DENSE ➔ MATRIX
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-6xl w-full px-6 py-10 space-y-12">
+        
+        {/* --- Top Control & Context Section --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Description */}
+          <div className="lg:col-span-1 space-y-6">
+            <h2 className="text-2xl font-semibold text-white">Visualizing the <span className="text-cyan-400">Dense Layer</span></h2>
+            <p className="text-slate-400 leading-relaxed text-sm">
+              The dense layer is the building block of Deep Learning. 
+              While diagrams often show it as a web of "neurons," mathematically, 
+              it is simply a <strong>Matrix Multiplication</strong>.
+            </p>
+            
+            {/* Control Panel */}
+            <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-xl shadow-xl backdrop-blur-sm">
+              <div className="flex justify-between items-center mb-6 text-xs font-bold tracking-wider text-slate-400 uppercase">
+                <div className="flex items-center gap-2">
+                  <GitGraph size={14} /> Graph
+                </div>
+                <div className="flex items-center gap-2">
+                  <Grid size={14} /> Matrix
+                </div>
+              </div>
+              
+              <div className="relative h-6 mb-6 group">
+                <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${sliderVal}%` }}></div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sliderVal}
+                  onChange={(e) => setSliderVal(Number(e.target.value))}
+                  className="absolute top-0 left-0 w-full h-full opacity-0 cursor-ew-resize"
+                />
+                <div 
+                  className="absolute top-1/2 w-6 h-6 bg-white rounded-full shadow-lg shadow-cyan-500/50 transform -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-all duration-75"
+                  style={{ left: `${sliderVal}%` }}
+                >
+                  <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-cyan-500"></div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 text-xs font-mono text-slate-500 border-t border-slate-800 pt-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]"></div> POS
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]"></div> NEG
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visualization Canvas */}
+          <div className="lg:col-span-2 relative bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden min-h-[500px] flex items-center justify-center">
+            {/* Subtle Grid Background */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(30,41,59,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(30,41,59,0.3)_1px,transparent_1px)] bg-[size:20px_20px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] pointer-events-none"></div>
+
+            <svg 
+              width={svgWidth} 
+              height={svgHeight} 
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              className="relative z-10 w-full h-full"
+              style={{ maxHeight: '500px' }}
+            >
+              {/* Matrix Grid Lines (Fade In) */}
+              <g style={{ opacity: t }}>
+                {INPUT_LABELS.map((_, i) => (
+                  <line 
+                    key={`h-${i}`} x1={matrixOriginX} y1={matrixOriginY + i * cellSize} x2={matrixOriginX + OUTPUT_LABELS.length * cellSize} y2={matrixOriginY + i * cellSize} 
+                    stroke="#1e293b" strokeWidth="1"
+                  />
+                ))}
+                {OUTPUT_LABELS.map((_, j) => (
+                  <line 
+                    key={`v-${j}`} x1={matrixOriginX + j * cellSize} y1={matrixOriginY} x2={matrixOriginX + j * cellSize} y2={matrixOriginY + INPUT_LABELS.length * cellSize} 
+                    stroke="#1e293b" strokeWidth="1"
+                  />
+                ))}
+              </g>
+
+              {/* Connections (Morphing) */}
+              <g>
+                {connections.map((conn, idx) => (
+                  <path
+                    key={idx}
+                    d={conn.path}
+                    fill={`rgba(${conn.color}, ${conn.opacity * 0.9})`} // Increased opacity for better visibility
+                    stroke={t < 0.2 ? `rgba(${conn.color}, 0.5)` : "none"} // Stroke only in early graph stage
+                    strokeWidth={1}
+                    className="transition-all duration-75 ease-linear"
+                  />
+                ))}
+              </g>
+
+              {/* Input Nodes */}
+              {inputs.map((inp, i) => (
+                <g key={`in-${i}`} transform={`translate(${inp.currentX}, ${inp.currentY})`}>
+                  <circle r={4} className="fill-slate-400" style={{ opacity: 1 - t, transform: `scale(${1 - t})` }} />
+                  <text
+                    x={t > 0.5 ? -10 : -15} y={5}
+                    textAnchor="end"
+                    className="text-[10px] md:text-xs font-medium fill-slate-400 tracking-tight"
+                  >
+                    {inp.label}
+                  </text>
+                </g>
+              ))}
+
+              {/* Output Nodes */}
+              {outputs.map((out, j) => (
+                <g key={`out-${j}`} transform={`translate(${out.currentX}, ${out.currentY})`}>
+                  <circle r={4} className="fill-slate-100" style={{ opacity: 1 - t, transform: `scale(${1 - t})` }} />
+                  <text
+                    x={t > 0.5 ? 0 : 15} y={t > 0.5 ? -10 : 5}
+                    transform={t > 0.5 ? `rotate(-45)` : ''}
+                    textAnchor="start"
+                    className="text-[10px] md:text-xs font-bold fill-slate-200"
+                  >
+                    {out.label}
+                  </text>
+                </g>
+              ))}
+
+              {/* Static Labels */}
+              <text x={graphInputX} y={50} textAnchor="middle" style={{opacity: 1-t}} className="fill-slate-600 text-xs font-bold tracking-widest uppercase">Inputs (x)</text>
+              <text x={graphOutputX} y={50} textAnchor="middle" style={{opacity: 1-t}} className="fill-slate-600 text-xs font-bold tracking-widest uppercase">Outputs (y)</text>
+              <text x={matrixOriginX + (OUTPUT_LABELS.length * cellSize)/2} y={matrixOriginY - 60} textAnchor="middle" style={{opacity: t}} className="fill-cyan-500 text-xs font-bold tracking-widest uppercase">Weights (W)</text>
+            </svg>
+          </div>
+        </div>
+
+        {/* --- Explainer & Code Section --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Mathematical Explanation */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+               <span className="text-6xl font-serif italic font-black">Math</span>
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span className="bg-slate-800 p-1.5 rounded-md"><ArrowRight size={16} className="text-cyan-400"/></span>
+              The Formula
+            </h3>
+            
+            <div className="space-y-4 text-slate-400 text-sm">
+              <p>
+                In the graph view, we calculate the output by summing weighted connections. In Linear Algebra, this is a dot product.
+              </p>
+              
+              <div className="my-6 p-4 bg-slate-950 rounded-lg border border-slate-800 flex justify-center items-center">
+                 {/* Styled Math Equation */}
+                 <span className="font-serif text-xl md:text-2xl text-slate-200">
+                  <i className="text-purple-400 font-bold">y</i> 
+                  <span className="mx-2 text-slate-600">=</span> 
+                  <i className="text-orange-400 font-bold">x</i> 
+                  <span className="mx-1 text-slate-500">·</span> 
+                  <i className="text-cyan-400 font-bold">W</i>
+                  <span className="mx-2 text-slate-600">+</span>
+                  <i className="text-emerald-400 font-bold">b</i>
+                 </span>
+              </div>
+
+              <ul className="space-y-2 font-mono text-xs">
+                 <li className="flex items-center gap-3">
+                   <span className="w-6 h-6 rounded flex items-center justify-center bg-purple-500/10 text-purple-400 font-serif italic">y</span>
+                   <span>Output Vector (Shape: 1×3)</span>
+                 </li>
+                 <li className="flex items-center gap-3">
+                   <span className="w-6 h-6 rounded flex items-center justify-center bg-orange-500/10 text-orange-400 font-serif italic">x</span>
+                   <span>Input Vector (Shape: 1×5)</span>
+                 </li>
+                 <li className="flex items-center gap-3">
+                   <span className="w-6 h-6 rounded flex items-center justify-center bg-cyan-500/10 text-cyan-400 font-serif italic">W</span>
+                   <span>Weight Matrix (Shape: 5×3)</span>
+                 </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Code Implementation */}
+          <div className="bg-[#0d1117] border border-slate-800 rounded-xl overflow-hidden flex flex-col shadow-2xl">
+            {/* Fake Terminal Header */}
+            <div className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Terminal size={14} className="text-slate-500"/>
+                <span className="text-xs font-mono text-slate-400">pytorch_example.py</span>
+              </div>
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/20"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500/20"></div>
+              </div>
+            </div>
+
+            {/* Code Block */}
+            <div className="p-4 overflow-x-auto">
+              <pre className="font-mono text-xs md:text-sm leading-6 text-slate-300">
+                <code>
+<span className="text-purple-400">import</span> torch{"\n"}
+<span className="text-purple-400">import</span> torch.nn <span className="text-purple-400">as</span> nn{"\n\n"}
+<span className="text-slate-500"># Define Dense Layer (Linear)</span>{"\n"}
+<span className="text-slate-500"># 5 Input Features -{'>'} 3 Output Classes</span>{"\n"}
+layer = nn.<span className="text-yellow-300">Linear</span>(in_features=<span className="text-orange-400">5</span>, out_features=<span className="text-orange-400">3</span>){"\n\n"}
+<span className="text-slate-500"># Example Input: [Whiskers, No Mice, Barks, No Bones, No Trees]</span>{"\n"}
+input_vector = torch.<span className="text-yellow-300">tensor</span>([[<span className="text-orange-400">1.0</span>, <span className="text-orange-400">0.0</span>, <span className="text-orange-400">1.0</span>, <span className="text-orange-400">0.0</span>, <span className="text-orange-400">0.0</span>]]){"\n\n"}
+<span className="text-slate-500"># Forward Pass</span>{"\n"}
+output = <span className="text-blue-400">layer</span>(input_vector){"\n\n"}
+<span className="text-yellow-300">print</span>(<span className="text-green-400">f"Output Shape: </span><span className="text-purple-400">{`{output.shape}`}</span><span className="text-green-400">"</span>){"\n"}
+<span className="text-slate-500"># {'>'} Output Shape: torch.Size([1, 3])</span>
+                </code>
+              </pre>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default DenseLayerVisualizer;
