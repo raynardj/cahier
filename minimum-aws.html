@@ -1,330 +1,487 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Server, 
-  Database, 
-  Wifi, 
-  AlertTriangle, 
-  CheckCircle, 
-  Info, 
-  CreditCard,
-  Cpu,
-  Shield,
-  ArrowRight
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Minimum Cost Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom range slider styling to match the React version's look */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: currentColor;
+            margin-top: -4px;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #1e293b; /* slate-800 */
+            border-radius: 4px;
+        }
+        /* Selection color */
+        ::selection {
+            background-color: rgba(6, 182, 212, 0.3); /* cyan-500/30 */
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-200 font-sans">
 
-const AWS_Cost_Estimator = () => {
-  const [activeTab, setActiveTab] = useState('comparison');
-  const [storage, setStorage] = useState(8); // GB
-  const [dataTransfer, setDataTransfer] = useState(50); // GB
-  const [selectedPlan, setSelectedPlan] = useState(null);
-
-  // Cost Constants
-  const T4G_NANO_HOURLY = 0.0042;
-  const HOURS_IN_MONTH = 730;
-  const EBS_PRICE_PER_GB = 0.08;
-  const DATA_TRANSFER_PRICE = 0.09; // per GB after 100GB
-  
-  // Dynamic Calculations
-  const ec2ComputeCost = T4G_NANO_HOURLY * HOURS_IN_MONTH;
-  const ec2StorageCost = storage * EBS_PRICE_PER_GB;
-  const ec2DataCost = Math.max(0, dataTransfer - 100) * DATA_TRANSFER_PRICE;
-  const ec2Total = ec2ComputeCost + ec2StorageCost + ec2DataCost;
-
-  const lightsailTotal = 3.50; // Fixed for base bundle
-  
-  // Plans Data
-  const plans = [
-    {
-      id: 'free',
-      name: 'AWS Free Tier',
-      price: '$0.00',
-      period: '/ first 12 mos',
-      icon: <Shield className="w-6 h-6 text-green-400" />,
-      features: ['750 hours/mo', 't2.micro or t3.micro', '30GB Storage', '1GB RAM'],
-      verdict: 'Best for new accounts learning AWS.',
-      color: 'border-green-500/50',
-      bgHover: 'hover:bg-green-900/10',
-      highlight: 'text-green-400'
-    },
-    {
-      id: 'lightsail',
-      name: 'Amazon Lightsail',
-      price: '$3.50',
-      period: '/ month',
-      icon: <Server className="w-6 h-6 text-orange-400" />,
-      features: ['Fixed monthly price', '1 vCPU, 512MB RAM', '20GB SSD Included', '1TB Data Transfer'],
-      verdict: 'Best for simple apps & predictable bills.',
-      color: 'border-orange-500/50',
-      bgHover: 'hover:bg-orange-900/10',
-      highlight: 'text-orange-400'
-    },
-    {
-      id: 'ec2',
-      name: 'EC2 t4g.nano',
-      price: `$${ec2Total.toFixed(2)}`,
-      period: '/ month (est)',
-      icon: <Cpu className="w-6 h-6 text-cyan-400" />,
-      features: ['High Performance ARM', '2 vCPUs', 'Flexible VPC Config', 'Pay for what you use'],
-      verdict: 'Best for complex architectures.',
-      color: 'border-cyan-500/50',
-      bgHover: 'hover:bg-cyan-900/10',
-      highlight: 'text-cyan-400'
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30">
-      
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-2 rounded-lg">
-              <Database className="w-6 h-6 text-white" />
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-2 rounded-lg">
+                    <i data-lucide="database" class="w-6 h-6 text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    AWS Minimum Cost Estimator
+                </h1>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              AWS Minimum Cost Estimator
-            </h1>
-          </div>
-          <div className="text-xs font-mono text-slate-500 hidden sm:block">
-            UPDATED: 2025
-          </div>
+            <div class="text-xs font-mono text-slate-500 hidden sm:block">
+                UPDATED: 2025
+            </div>
         </div>
-      </header>
+    </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-12">
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
         
-        {/* Intro */}
-        <section className="text-center space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
-            Run your service for <span className="text-cyan-400">coffee money</span>.
-          </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Running a 24/7 service doesn't have to break the bank. 
-            Here are the three absolute cheapest ways to keep a server alive on AWS.
-          </p>
+        <!-- Intro -->
+        <section class="text-center space-y-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-white tracking-tight">
+                Run your service for <span class="text-cyan-400">coffee money</span>.
+            </h2>
+            <p class="text-slate-400 max-w-2xl mx-auto text-lg">
+                Running a 24/7 service doesn't have to break the bank. 
+                Here are the three absolute cheapest ways to keep a server alive on AWS.
+            </p>
         </section>
 
-        {/* Interactive Cards */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan) => (
-            <div 
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan.id)}
-              className={`relative group cursor-pointer rounded-2xl border ${selectedPlan === plan.id ? plan.color + ' bg-slate-900' : 'border-slate-800 bg-slate-900/50'} p-6 transition-all duration-300 ${plan.bgHover} hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-900/10`}
-            >
-              {selectedPlan === plan.id && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-500 text-slate-950 text-xs font-bold rounded-full uppercase tracking-wider">
-                  Selected
+        <!-- Interactive Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plans-container">
+            
+            <!-- Free Tier Card -->
+            <div id="card-free" class="plan-card relative group cursor-pointer rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition-all duration-300 hover:bg-green-900/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-900/10" onclick="selectPlan('free')">
+                <div class="selection-badge absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-500 text-slate-950 text-xs font-bold rounded-full uppercase tracking-wider hidden">
+                    Selected
                 </div>
-              )}
-              
-              <div className="flex justify-between items-start mb-6">
-                <div className={`p-3 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors`}>
-                  {plan.icon}
+                
+                <div class="flex justify-between items-start mb-6">
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors">
+                        <i data-lucide="shield" class="w-6 h-6 text-green-400"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-green-400">$0.00</div>
+                        <div class="text-xs text-slate-500 font-medium uppercase tracking-wide">/ first 12 mos</div>
+                    </div>
                 </div>
-                <div className="text-right">
-                  <div className={`text-2xl font-bold ${plan.highlight}`}>
-                    {plan.price}
-                  </div>
-                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">
-                    {plan.period}
-                  </div>
-                </div>
-              </div>
 
-              <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
-              <p className="text-sm text-slate-400 mb-6 h-10">{plan.verdict}</p>
+                <h3 class="text-xl font-semibold text-white mb-2">AWS Free Tier</h3>
+                <p class="text-sm text-slate-400 mb-6 h-10">Best for new accounts learning AWS.</p>
 
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center text-sm text-slate-300">
-                    <CheckCircle className="w-4 h-4 mr-2 text-slate-600 shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <div className={`text-xs font-mono text-center py-2 rounded border border-dashed border-slate-700 text-slate-500 group-hover:text-slate-300 transition-colors`}>
-                Click for details
-              </div>
+                <ul class="space-y-3 mb-6">
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 750 hours/mo</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> t2.micro or t3.micro</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 30GB Storage</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 1GB RAM</li>
+                </ul>
+                <div class="text-xs font-mono text-center py-2 rounded border border-dashed border-slate-700 text-slate-500 group-hover:text-slate-300 transition-colors">Click for details</div>
             </div>
-          ))}
+
+            <!-- Lightsail Card -->
+            <div id="card-lightsail" class="plan-card relative group cursor-pointer rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition-all duration-300 hover:bg-orange-900/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-900/10" onclick="selectPlan('lightsail')">
+                <div class="selection-badge absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-500 text-slate-950 text-xs font-bold rounded-full uppercase tracking-wider hidden">
+                    Selected
+                </div>
+
+                <div class="flex justify-between items-start mb-6">
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors">
+                        <i data-lucide="server" class="w-6 h-6 text-orange-400"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-orange-400">$3.50</div>
+                        <div class="text-xs text-slate-500 font-medium uppercase tracking-wide">/ month</div>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold text-white mb-2">Amazon Lightsail</h3>
+                <p class="text-sm text-slate-400 mb-6 h-10">Best for simple apps & predictable bills.</p>
+
+                <ul class="space-y-3 mb-6">
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> Fixed monthly price</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 1 vCPU, 512MB RAM</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 20GB SSD Included</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 1TB Data Transfer</li>
+                </ul>
+                <div class="text-xs font-mono text-center py-2 rounded border border-dashed border-slate-700 text-slate-500 group-hover:text-slate-300 transition-colors">Click for details</div>
+            </div>
+
+            <!-- EC2 Card -->
+            <div id="card-ec2" class="plan-card relative group cursor-pointer rounded-2xl border border-slate-800 bg-slate-900/50 p-6 transition-all duration-300 hover:bg-cyan-900/10 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-900/10" onclick="selectPlan('ec2')">
+                <div class="selection-badge absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-cyan-500 text-slate-950 text-xs font-bold rounded-full uppercase tracking-wider hidden">
+                    Selected
+                </div>
+
+                <div class="flex justify-between items-start mb-6">
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors">
+                        <i data-lucide="cpu" class="w-6 h-6 text-cyan-400"></i>
+                    </div>
+                    <div class="text-right">
+                        <div id="ec2-card-price" class="text-2xl font-bold text-cyan-400">$3.71</div>
+                        <div class="text-xs text-slate-500 font-medium uppercase tracking-wide">/ month (est)</div>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold text-white mb-2">EC2 t4g.nano</h3>
+                <p class="text-sm text-slate-400 mb-6 h-10">Best for complex architectures.</p>
+
+                <ul class="space-y-3 mb-6">
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> High Performance ARM</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> 2 vCPUs</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> Flexible VPC Config</li>
+                    <li class="flex items-center text-sm text-slate-300"><i data-lucide="check-circle" class="w-4 h-4 mr-2 text-slate-600 shrink-0"></i> Pay for what you use</li>
+                </ul>
+                <div class="text-xs font-mono text-center py-2 rounded border border-dashed border-slate-700 text-slate-500 group-hover:text-slate-300 transition-colors">Click for details</div>
+            </div>
+
         </section>
 
-        {/* Simulator Section */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-6 md:p-8 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                <AlertTriangle className="w-6 h-6 text-amber-400" />
-                Hidden Cost Simulator
-              </h3>
-              <p className="text-slate-400 mt-1">
-                See how storage and data usage affect the price of a custom EC2 instance vs. Lightsail.
-              </p>
-            </div>
-            <div className="px-4 py-2 bg-slate-950 rounded-lg border border-slate-800 text-sm font-mono text-slate-400">
-              Region: us-east-1
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            {/* Controls */}
-            <div className="p-6 md:p-8 space-y-8">
-              
-              {/* Storage Slider */}
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                    <Database className="w-4 h-4 text-cyan-400" />
-                    EBS Storage (GB)
-                  </label>
-                  <span className="text-cyan-400 font-mono font-bold">{storage} GB</span>
+        <!-- Simulator Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div class="p-6 md:p-8 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-400"></i>
+                        Hidden Cost Simulator
+                    </h3>
+                    <p class="text-slate-400 mt-1">
+                        See how storage and data usage affect the price of a custom EC2 instance vs. Lightsail.
+                    </p>
                 </div>
-                <input 
-                  type="range" 
-                  min="8" 
-                  max="100" 
-                  value={storage}
-                  onChange={(e) => setStorage(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                />
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>8 GB (Min)</span>
-                  <span>100 GB</span>
+                <div class="px-4 py-2 bg-slate-950 rounded-lg border border-slate-800 text-sm font-mono text-slate-400">
+                    Region: us-east-1
                 </div>
-                <p className="text-xs text-slate-500 bg-slate-950/50 p-3 rounded border border-slate-800">
-                  Note: Lightsail includes 20GB. EC2 charges ~$0.08 per GB.
-                </p>
-              </div>
-
-              {/* Data Transfer Slider */}
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                    <Wifi className="w-4 h-4 text-purple-400" />
-                    Outbound Data Transfer (GB/mo)
-                  </label>
-                  <span className="text-purple-400 font-mono font-bold">{dataTransfer} GB</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1500" 
-                  step="10"
-                  value={dataTransfer}
-                  onChange={(e) => setDataTransfer(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                />
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>0 GB</span>
-                  <span>1.5 TB</span>
-                </div>
-                <p className="text-xs text-slate-500 bg-slate-950/50 p-3 rounded border border-slate-800">
-                  Note: Lightsail includes 1TB (1024GB). EC2 gives 100GB free, then $0.09/GB.
-                </p>
-              </div>
-
             </div>
 
-            {/* Results */}
-            <div className="bg-slate-950/50 p-6 md:p-8 flex flex-col justify-center border-l border-slate-800">
-              <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">
-                Monthly Breakdown
-              </h4>
-
-              <div className="space-y-4">
-                {/* Lightsail Row */}
-                <div className={`p-4 rounded-xl border flex justify-between items-center transition-all duration-500 ${ec2Total > lightsailTotal ? 'bg-green-900/10 border-green-500/30' : 'bg-slate-900 border-slate-800 opacity-50'}`}>
-                  <div>
-                    <div className="font-bold text-white flex items-center gap-2">
-                      Lightsail
-                      {ec2Total > lightsailTotal && <span className="text-[10px] bg-green-500 text-slate-950 px-2 py-0.5 rounded-full font-bold">WINNER</span>}
+            <div class="grid grid-cols-1 lg:grid-cols-2">
+                <!-- Controls -->
+                <div class="p-6 md:p-8 space-y-8">
+                    
+                    <!-- Storage Slider -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <label class="flex items-center gap-2 text-sm font-medium text-slate-300">
+                                <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+                                EBS Storage (GB)
+                            </label>
+                            <span id="storage-display" class="text-cyan-400 font-mono font-bold">8 GB</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            id="storage-slider"
+                            min="8" 
+                            max="100" 
+                            value="8"
+                            class="w-full h-2 rounded-lg text-cyan-500"
+                        />
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span>8 GB (Min)</span>
+                            <span>100 GB</span>
+                        </div>
+                        <p class="text-xs text-slate-500 bg-slate-950/50 p-3 rounded border border-slate-800">
+                            Note: Lightsail includes 20GB. EC2 charges ~$0.08 per GB.
+                        </p>
                     </div>
-                    <div className="text-xs text-slate-400">Fixed rate (includes 1TB data)</div>
-                  </div>
-                  <div className="text-xl font-mono font-bold text-white">$3.50</div>
+
+                    <!-- Data Transfer Slider -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between">
+                            <label class="flex items-center gap-2 text-sm font-medium text-slate-300">
+                                <i data-lucide="wifi" class="w-4 h-4 text-purple-400"></i>
+                                Outbound Data Transfer (GB/mo)
+                            </label>
+                            <span id="data-display" class="text-purple-400 font-mono font-bold">50 GB</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            id="data-slider"
+                            min="0" 
+                            max="1500" 
+                            step="10"
+                            value="50"
+                            class="w-full h-2 rounded-lg text-purple-500"
+                        />
+                        <div class="flex justify-between text-xs text-slate-500">
+                            <span>0 GB</span>
+                            <span>1.5 TB</span>
+                        </div>
+                        <p class="text-xs text-slate-500 bg-slate-950/50 p-3 rounded border border-slate-800">
+                            Note: Lightsail includes 1TB (1024GB). EC2 gives 100GB free, then $0.09/GB.
+                        </p>
+                    </div>
+
                 </div>
 
-                {/* EC2 Row */}
-                <div className={`p-4 rounded-xl border flex flex-col gap-3 transition-all duration-500 ${ec2Total < lightsailTotal ? 'bg-green-900/10 border-green-500/30' : 'bg-slate-900 border-slate-800'}`}>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="font-bold text-white flex items-center gap-2">
-                        EC2 t4g.nano
-                        {ec2Total < lightsailTotal && <span className="text-[10px] bg-green-500 text-slate-950 px-2 py-0.5 rounded-full font-bold">WINNER</span>}
-                      </div>
-                      <div className="text-xs text-slate-400">Custom configuration</div>
-                    </div>
-                    <div className={`text-xl font-mono font-bold ${ec2Total > lightsailTotal ? 'text-amber-400' : 'text-white'}`}>
-                      ${ec2Total.toFixed(2)}
-                    </div>
-                  </div>
-                  
-                  {/* Micro breakdown */}
-                  <div className="grid grid-cols-3 gap-2 text-xs font-mono pt-3 border-t border-slate-800/50">
-                    <div className="text-slate-500">
-                      Compute<br/>
-                      <span className="text-slate-300">${ec2ComputeCost.toFixed(2)}</span>
-                    </div>
-                    <div className="text-slate-500">
-                      Storage<br/>
-                      <span className="text-slate-300">${ec2StorageCost.toFixed(2)}</span>
-                    </div>
-                    <div className="text-slate-500">
-                      Data<br/>
-                      <span className={`${ec2DataCost > 0 ? 'text-amber-400' : 'text-slate-300'}`}>${ec2DataCost.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <!-- Results -->
+                <div class="bg-slate-950/50 p-6 md:p-8 flex flex-col justify-center border-l border-slate-800">
+                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">
+                        Monthly Breakdown
+                    </h4>
 
-              {dataTransfer > 1000 && (
-                <div className="mt-6 flex items-start gap-3 text-amber-400 text-sm bg-amber-950/20 p-4 rounded-lg border border-amber-900/50">
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <p>
-                    Warning: You've exceeded the 1TB data limit for the cheapest Lightsail plan. 
-                    Lightsail overage fees are generally lower than EC2, but you may need to upgrade to a higher tier.
-                  </p>
+                    <div class="space-y-4">
+                        <!-- Lightsail Row -->
+                        <div id="lightsail-breakdown" class="p-4 rounded-xl border flex justify-between items-center transition-all duration-500 bg-slate-900 border-slate-800 opacity-50">
+                            <div>
+                                <div class="font-bold text-white flex items-center gap-2">
+                                    Lightsail
+                                    <span id="lightsail-winner" class="text-[10px] bg-green-500 text-slate-950 px-2 py-0.5 rounded-full font-bold hidden">WINNER</span>
+                                </div>
+                                <div class="text-xs text-slate-400">Fixed rate (includes 1TB data)</div>
+                            </div>
+                            <div class="text-xl font-mono font-bold text-white">$3.50</div>
+                        </div>
+
+                        <!-- EC2 Row -->
+                        <div id="ec2-breakdown" class="p-4 rounded-xl border flex flex-col gap-3 transition-all duration-500 bg-green-900/10 border-green-500/30">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <div class="font-bold text-white flex items-center gap-2">
+                                        EC2 t4g.nano
+                                        <span id="ec2-winner" class="text-[10px] bg-green-500 text-slate-950 px-2 py-0.5 rounded-full font-bold">WINNER</span>
+                                    </div>
+                                    <div class="text-xs text-slate-400">Custom configuration</div>
+                                </div>
+                                <div id="ec2-breakdown-price" class="text-xl font-mono font-bold text-white">
+                                    $3.71
+                                </div>
+                            </div>
+                            
+                            <!-- Micro breakdown -->
+                            <div class="grid grid-cols-3 gap-2 text-xs font-mono pt-3 border-t border-slate-800/50">
+                                <div class="text-slate-500">
+                                    Compute<br/>
+                                    <span id="cost-compute" class="text-slate-300">$3.07</span>
+                                </div>
+                                <div class="text-slate-500">
+                                    Storage<br/>
+                                    <span id="cost-storage" class="text-slate-300">$0.64</span>
+                                </div>
+                                <div class="text-slate-500">
+                                    Data<br/>
+                                    <span id="cost-data" class="text-slate-300">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Warning for High Data -->
+                    <div id="data-warning" class="mt-6 flex items-start gap-3 text-amber-400 text-sm bg-amber-950/20 p-4 rounded-lg border border-amber-900/50 hidden">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i>
+                        <p>
+                            Warning: You've exceeded the 1TB data limit for the cheapest Lightsail plan. 
+                            Lightsail overage fees are generally lower than EC2, but you may need to upgrade to a higher tier.
+                        </p>
+                    </div>
                 </div>
-              )}
             </div>
-          </div>
         </section>
 
-        {/* Action Tips */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-            <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 p-6 rounded-xl">
-                <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-indigo-400"/>
+        <!-- Action Tips -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+            <div class="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 p-6 rounded-xl">
+                <h3 class="font-bold text-white mb-2 flex items-center gap-2">
+                    <i data-lucide="credit-card" class="w-5 h-5 text-indigo-400"></i>
                     Pro Tip: Budget Alarms
                 </h3>
-                <p className="text-sm text-slate-300 mb-4">
+                <p class="text-sm text-slate-300 mb-4">
                     Never trust "estimated" billing. Always set up a Billing Alarm in CloudWatch.
                 </p>
-                <div className="bg-slate-950 p-3 rounded text-xs font-mono text-indigo-300 border border-indigo-500/20">
+                <div class="bg-slate-950 p-3 rounded text-xs font-mono text-indigo-300 border border-indigo-500/20">
                     AWS Console &gt; Billing &gt; Budgets &gt; Create Budget &gt; Limit: $5.00
                 </div>
             </div>
 
-            <div className="bg-gradient-to-br from-red-900/20 to-orange-900/20 border border-red-500/20 p-6 rounded-xl">
-                <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-red-400"/>
+            <div class="bg-gradient-to-br from-red-900/20 to-orange-900/20 border border-red-500/20 p-6 rounded-xl">
+                <h3 class="font-bold text-white mb-2 flex items-center gap-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
                     The "Zombie" Volume Trap
                 </h3>
-                <p className="text-sm text-slate-300">
-                    Terminating an EC2 instance <span className="font-bold text-white">does not</span> automatically delete its storage volume unless you check the specific box during creation.
+                <p class="text-sm text-slate-300">
+                    Terminating an EC2 instance <span class="font-bold text-white">does not</span> automatically delete its storage volume unless you check the specific box during creation.
                 </p>
-                <p className="mt-2 text-xs text-red-300">
+                <p class="mt-2 text-xs text-red-300">
                     Always check the "Elastic Block Store" tab in the EC2 console after shutting down a project.
                 </p>
             </div>
         </section>
 
-      </main>
-    </div>
-  );
-};
+    </main>
 
-export default AWS_Cost_Estimator;
+    <!-- App Logic -->
+    <script>
+        // Constants
+        const T4G_NANO_HOURLY = 0.0042;
+        const HOURS_IN_MONTH = 730;
+        const EBS_PRICE_PER_GB = 0.08;
+        const DATA_TRANSFER_PRICE = 0.09; // per GB after 100GB
+        const LIGHTSAIL_TOTAL = 3.50;
+
+        // State variables
+        let storage = 8;
+        let dataTransfer = 50;
+        let selectedPlanId = null;
+
+        // DOM Elements
+        const storageSlider = document.getElementById('storage-slider');
+        const dataSlider = document.getElementById('data-slider');
+        const storageDisplay = document.getElementById('storage-display');
+        const dataDisplay = document.getElementById('data-display');
+        
+        const ec2CardPrice = document.getElementById('ec2-card-price');
+        const ec2BreakdownPrice = document.getElementById('ec2-breakdown-price');
+        
+        const costCompute = document.getElementById('cost-compute');
+        const costStorage = document.getElementById('cost-storage');
+        const costData = document.getElementById('cost-data');
+        
+        const lightsailBreakdown = document.getElementById('lightsail-breakdown');
+        const ec2Breakdown = document.getElementById('ec2-breakdown');
+        const lightsailWinner = document.getElementById('lightsail-winner');
+        const ec2Winner = document.getElementById('ec2-winner');
+        
+        const dataWarning = document.getElementById('data-warning');
+
+        // Styles
+        const WINNER_CLASS = ['bg-green-900/10', 'border-green-500/30'];
+        const LOSER_CLASS = ['bg-slate-900', 'border-slate-800', 'opacity-50'];
+
+        // Core Calculation Function
+        function updateCalculations() {
+            // Calculate EC2 Costs
+            const computeCost = T4G_NANO_HOURLY * HOURS_IN_MONTH;
+            const storageCost = storage * EBS_PRICE_PER_GB;
+            const dataCost = Math.max(0, dataTransfer - 100) * DATA_TRANSFER_PRICE;
+            const ec2Total = computeCost + storageCost + dataCost;
+
+            // Update Text Displays
+            storageDisplay.innerText = `${storage} GB`;
+            dataDisplay.innerText = `${dataTransfer} GB`;
+            
+            ec2CardPrice.innerText = `$${ec2Total.toFixed(2)}`;
+            ec2BreakdownPrice.innerText = `$${ec2Total.toFixed(2)}`;
+            
+            costCompute.innerText = `$${computeCost.toFixed(2)}`;
+            costStorage.innerText = `$${storageCost.toFixed(2)}`;
+            costData.innerText = `$${dataCost.toFixed(2)}`;
+
+            // Color data cost orange if not zero
+            if(dataCost > 0) {
+                costData.classList.remove('text-slate-300');
+                costData.classList.add('text-amber-400');
+            } else {
+                costData.classList.add('text-slate-300');
+                costData.classList.remove('text-amber-400');
+            }
+
+            // Breakdown Comparison Logic
+            if (ec2Total > LIGHTSAIL_TOTAL) {
+                // Lightsail Wins
+                lightsailBreakdown.classList.add(...WINNER_CLASS);
+                lightsailBreakdown.classList.remove(...LOSER_CLASS);
+                lightsailWinner.classList.remove('hidden');
+
+                ec2Breakdown.classList.remove(...WINNER_CLASS);
+                ec2Breakdown.classList.add(...LOSER_CLASS);
+                ec2Winner.classList.add('hidden');
+                ec2BreakdownPrice.classList.remove('text-amber-400');
+                ec2BreakdownPrice.classList.add('text-white');
+            } else {
+                // EC2 Wins
+                ec2Breakdown.classList.add(...WINNER_CLASS);
+                ec2Breakdown.classList.remove(...LOSER_CLASS);
+                ec2Winner.classList.remove('hidden');
+                
+                lightsailBreakdown.classList.remove(...WINNER_CLASS);
+                lightsailBreakdown.classList.add(...LOSER_CLASS);
+                lightsailWinner.classList.add('hidden');
+                
+                // Highlight EC2 price in Amber if it's the winner? 
+                // The React code had logic: {ec2Total > lightsailTotal ? 'text-amber-400' : 'text-white'}
+                // Actually the React logic was if EC2 is MORE expensive (Total > Lightsail), make it amber.
+                if (ec2Total > LIGHTSAIL_TOTAL) {
+                    ec2BreakdownPrice.classList.add('text-amber-400');
+                    ec2BreakdownPrice.classList.remove('text-white');
+                } else {
+                    ec2BreakdownPrice.classList.remove('text-amber-400');
+                    ec2BreakdownPrice.classList.add('text-white');
+                }
+            }
+
+            // Warning Logic
+            if (dataTransfer > 1000) {
+                dataWarning.classList.remove('hidden');
+            } else {
+                dataWarning.classList.add('hidden');
+            }
+        }
+
+        // Selection Logic
+        function selectPlan(planId) {
+            selectedPlanId = planId;
+            
+            // Define colors per plan
+            const planColors = {
+                'free': 'border-green-500/50',
+                'lightsail': 'border-orange-500/50',
+                'ec2': 'border-cyan-500/50'
+            };
+
+            const cards = ['free', 'lightsail', 'ec2'];
+            
+            cards.forEach(id => {
+                const card = document.getElementById(`card-${id}`);
+                const badge = card.querySelector('.selection-badge');
+                
+                // Reset basic classes
+                card.classList.remove('bg-slate-900', ...Object.values(planColors));
+                card.classList.add('bg-slate-900/50', 'border-slate-800');
+                badge.classList.add('hidden');
+
+                if (id === planId) {
+                    // Apply selected styles
+                    card.classList.remove('bg-slate-900/50', 'border-slate-800');
+                    card.classList.add('bg-slate-900', planColors[id]);
+                    badge.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Event Listeners
+        storageSlider.addEventListener('input', (e) => {
+            storage = parseInt(e.target.value);
+            updateCalculations();
+        });
+
+        dataSlider.addEventListener('input', (e) => {
+            dataTransfer = parseInt(e.target.value);
+            updateCalculations();
+        });
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Initial Run
+        updateCalculations();
+
+    </script>
+</body>
+</html>
