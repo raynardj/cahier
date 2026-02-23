@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standard Attention — Visualization</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --border: #2e3345;
+      --text: #e2e4eb;
+      --text-muted: #8b8fa3;
+      --accent: #6c8cff;
+      --accent-glow: rgba(108, 140, 255, 0.15);
+      --green: #4ade80;
+      --orange: #fb923c;
+      --red: #f87171;
+      --purple: #a78bfa;
+      --cyan: #22d3ee;
+      --yellow: #f7e4a3;
+      --indigo: #9aa8ff;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 12px 64px;
+    }
+
+    header {
+      padding: 56px 0 32px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    section {
+      padding: 40px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-child {
+      border-bottom: none;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .note {
+      background: rgba(108, 140, 255, 0.06);
+      border-left: 3px solid var(--accent);
+      padding: 12px 14px;
+      border-radius: 0 8px 8px 0;
+      margin: 14px 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin: 12px 0 0;
+    }
+
+    .controls button {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-sans);
+    }
+
+    .controls button:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .controls button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .play-btn {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .speed-active {
+      background: var(--accent) !important;
+      color: #fff !important;
+      border-color: var(--accent) !important;
+      font-weight: 600;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+
+    .phase-indicator {
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    canvas {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      display: block;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .tally {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .tally span {
+      background: var(--surface2);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Standard Attention</h1>
+      <p>Data movement between HBM and on-chip SRAM during standard self-attention. Watch how every float is shuttled
+        through the 4 memory controller lanes, square by square.</p>
+    </header>
+
+    <section>
+      <h2>Interactive Visualization</h2>
+      <div class="card">
+        <p style="color:var(--text-muted);">Every square represents one float. Transfers are accounted for
+          square-by-square through the memory controller lanes. SRAM shows the actual blocks loaded for each computation
+          step.</p>
+        <div class="controls">
+          <button id="btnPlay" class="play-btn">&#9654; Play</button>
+          <button id="btnPause">&#9208; Pause</button>
+          <button id="btnStep">Step &rarr;</button>
+          <button id="btnBack">&larr; Back</button>
+          <button id="btnReset">Reset</button>
+          <span style="flex:1;"></span>
+          <button id="btnFast" class="speed-active">Fast (~20s)</button>
+          <button id="btnDetailed">Detailed</button>
+          <span class="badge phase-indicator" id="phaseLabel">Phase 1: Initial State</span>
+        </div>
+        <div class="status-bar">
+          <span class="badge" id="statusText">Ready</span>
+        </div>
+        <div style="margin-top:16px;">
+          <canvas id="viz"></canvas>
+        </div>
+        <div id="tally" style="display:none;"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#fff;"></span> X (Input)</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--accent);"></span> Q / Wq</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--green);"></span> K / Wk</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--red);"></span> V / Wv</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--yellow);"></span> S (scores)</div>
+          <div class="legend-item"><span class="swatch" style="background:var(--indigo);"></span> P (softmax)</div>
+          <div class="legend-item"><span class="swatch" style="background:#e2e4eb;"></span> O (output)</div>
+        </div>
+        <div class="note">
+          S and P are the large N&times;N matrices that dominate HBM traffic in standard attention. Every square
+          transferred is fully accounted for in the tally.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('viz');
+    const ctx = canvas.getContext('2d');
+    let dpr = window.devicePixelRatio || 1;
+
+    const SEQ = 128, HS = 16, GAP = 2, BLOCK_ROWS = 16;
+    const NUM_BLOCKS = SEQ / BLOCK_ROWS;
+    const NUM_LANES = 4;
+
+    let speedMode = 'fast';
+    function T() {
+      return speedMode === 'fast'
+        ? { xfer: 50, compute: 40, pause: 12 }
+        : { xfer: 600, compute: 500, pause: 150 };
+    }
+
+    const colors = {
+      X: '#ffffff', Wq: '#6c8cff', Wk: '#4ade80', Wv: '#f87171',
+      Q: '#6c8cff', K: '#4ade80', V: '#f87171',
+      S: '#f7e4a3', P: '#9aa8ff', O: '#e2e4eb'
+    };
+
+    const mathDim = {
+      X: '128\u00d716', Wq: '16\u00d716', Wk: '16\u00d716', Wv: '16\u00d716',
+      Q: '128\u00d716', K: '128\u00d716', V: '128\u00d716',
+      S: '128\u00d7128', P: '128\u00d7128', O: '128\u00d716'
+    };
+
+    const stableAlpha = {};
+    function initAlpha(id, n, base, spread) {
+      const a = new Float32Array(n);
+      for (let i = 0; i < n; i++) a[i] = Math.max(0.2, Math.min(1, base + (Math.random() - 0.5) * 2 * spread));
+      stableAlpha[id] = a;
+    }
+    initAlpha('S', SEQ * SEQ, 0.7, 0.25);
+    (function initPAlpha() {
+      const a = new Float32Array(SEQ * SEQ);
+      for (let r = 0; r < SEQ; r++) {
+        const peak = Math.floor(Math.random() * SEQ);
+        for (let c = 0; c < SEQ; c++) {
+          a[r * SEQ + c] = (c === peak) ? 1.0 : (0.12 + Math.random() * 0.2);
+        }
+      }
+      stableAlpha['P'] = a;
+    })();
+
+    function makeMat(id, w, h, color, init) {
+      const ss = new Uint8Array(w * h);
+      if (init) ss.fill(1);
+      return { id, w, h, color, squareState: ss, inHBM: init };
+    }
+
+    let matrices;
+    function initMatrices() {
+      matrices = {
+        X: makeMat('X', SEQ, HS, colors.X, true),
+        Wq: makeMat('Wq', HS, HS, colors.Wq, true),
+        Wk: makeMat('Wk', HS, HS, colors.Wk, true),
+        Wv: makeMat('Wv', HS, HS, colors.Wv, true),
+        Q: makeMat('Q', SEQ, HS, colors.Q, false),
+        K: makeMat('K', SEQ, HS, colors.K, false),
+        V: makeMat('V', SEQ, HS, colors.V, false),
+        S: makeMat('S', SEQ, SEQ, colors.S, false),
+        P: makeMat('P', SEQ, SEQ, colors.P, false),
+        O: makeMat('O', SEQ, HS, colors.O, false),
+      };
+    }
+
+    let sramSlots = [null, null, null];
+    let sramFlash = { active: false, start: 0, dur: 0 };
+    let activeTransfers = [];
+    let totalTransferred = 0;
+    let skipAnimation = false;
+    let runGen = 0;
+    let tallyHBM = 0, tallySRAM = 0;
+
+    const sectionLabels = [
+      'Initial State in HBM',
+      'Projection of Query, Key and Value',
+      'Computed pre-normalized attention scores',
+      'Attention scores',
+      'Attention output'
+    ];
+
+    const L = {
+      pos: {}, secBoxes: [], sram: {}, hbm: {}, tile: 0,
+      canvasH: 0, cw: 0, laneTop: 0, laneBot: 0,
+      wLabelY: 0, wDashTop: 0, sramSlotAreas: [], laneXs: []
+    };
+
+    function gridPx(n) { return n * L.tile + (n - 1) * GAP; }
+
+    function hexRgba(hex, a) {
+      const n = parseInt(hex.replace('#', ''), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+
+    function darkenHex(hex, f) {
+      const n = parseInt(hex.replace('#', ''), 16);
+      return 'rgb(' + Math.floor(((n >> 16) & 255) * f) + ',' + Math.floor(((n >> 8) & 255) * f) + ',' + Math.floor((n & 255) * f) + ')';
+    }
+
+    function computeLayout() {
+      const cw = canvas.clientWidth || 1000;
+      L.cw = cw;
+
+      const hbmMargin = 8, hbmPad = 12, secPad = 8;
+      const avail = cw - 2 * hbmMargin - 2 * hbmPad - 2 * secPad;
+      L.tile = Math.max(3, (avail - (SEQ - 1) * GAP) / SEQ);
+
+      const sramW = Math.min(cw - 16, cw * 0.92);
+      const sramH = 180;
+      L.sram = { x: (cw - sramW) / 2, y: 40, w: sramW, h: sramH };
+
+      const slotPad = 10, slotLabelH = 16;
+      const slotW = (sramW - 4 * slotPad) / 3;
+      const slotH = sramH - slotLabelH - 2 * slotPad;
+      L.sramSlotAreas = [];
+      for (let i = 0; i < 3; i++) {
+        L.sramSlotAreas[i] = {
+          x: L.sram.x + slotPad + i * (slotW + slotPad),
+          y: L.sram.y + slotPad + slotLabelH,
+          w: slotW, h: slotH
+        };
+      }
+
+      L.laneTop = L.sram.y + sramH;
+      L.laneBot = L.laneTop + 60;
+      L.laneXs = [];
+      for (let i = 0; i < NUM_LANES; i++) {
+        L.laneXs[i] = L.sram.x + (sramW / 5) * (i + 1);
+      }
+
+      const hbmX = hbmMargin;
+      const hbmY = L.laneBot;
+      const hbmW = cw - 2 * hbmMargin;
+      L.hbm = { x: hbmX, y: hbmY, w: hbmW, h: 0 };
+
+      const sx = hbmX + hbmPad + secPad;
+      let y = hbmY + hbmPad;
+      const secLblH = 20, matLblH = 16, matGap = 10, secPadBot = 10, secSpace = 8;
+      const g16 = gridPx(HS);
+      const g128 = gridPx(SEQ);
+      const w16 = gridPx(HS);
+
+      L.secBoxes = [];
+
+      const s0 = y;
+      y += secLblH;
+      L.pos.X = { x: sx, y: y + matLblH };
+      y += matLblH + g16 + matGap;
+
+      const wLblH = 14, dashPad = 5, wGap = 12;
+      const wBoxW = w16 + 2 * dashPad;
+      const wStride = wBoxW + wGap;
+      L.wLabelY = y;
+      y += wLblH;
+      L.wDashTop = y;
+      y += dashPad + matLblH;
+      L.pos.Wq = { x: sx + dashPad, y: y };
+      L.pos.Wk = { x: sx + dashPad + wStride, y: y };
+      L.pos.Wv = { x: sx + dashPad + 2 * wStride, y: y };
+      L.wBoxW = wBoxW;
+      L.wStride = wStride;
+      L.wBoxH = dashPad + matLblH + g16 + dashPad;
+      y += g16 + dashPad + secPadBot;
+      L.secBoxes[0] = { x: hbmX + hbmPad, y: s0, w: hbmW - 2 * hbmPad, h: y - s0 };
+      y += secSpace;
+
+      const s1 = y;
+      y += secLblH;
+      L.pos.Q = { x: sx, y: y + matLblH };
+      y += matLblH + g16 + matGap;
+      L.pos.K = { x: sx, y: y + matLblH };
+      y += matLblH + g16 + matGap;
+      L.pos.V = { x: sx, y: y + matLblH };
+      y += matLblH + g16 + secPadBot;
+      L.secBoxes[1] = { x: hbmX + hbmPad, y: s1, w: hbmW - 2 * hbmPad, h: y - s1 };
+      y += secSpace;
+
+      const s2 = y;
+      y += secLblH;
+      L.pos.S = { x: sx, y: y + matLblH };
+      y += matLblH + g128 + secPadBot;
+      L.secBoxes[2] = { x: hbmX + hbmPad, y: s2, w: hbmW - 2 * hbmPad, h: y - s2 };
+      y += secSpace;
+
+      const s3 = y;
+      y += secLblH;
+      L.pos.P = { x: sx, y: y + matLblH };
+      y += matLblH + g128 + secPadBot;
+      L.secBoxes[3] = { x: hbmX + hbmPad, y: s3, w: hbmW - 2 * hbmPad, h: y - s3 };
+      y += secSpace;
+
+      const s4 = y;
+      y += secLblH;
+      L.pos.O = { x: sx, y: y + matLblH };
+      y += matLblH + g16 + secPadBot;
+      L.secBoxes[4] = { x: hbmX + hbmPad, y: s4, w: hbmW - 2 * hbmPad, h: y - s4 };
+
+      L.hbm.h = y - hbmY + hbmPad;
+      L.canvasH = hbmY + L.hbm.h + 16;
+    }
+
+    function resizeCanvas() {
+      computeLayout();
+      const dw = canvas.clientWidth;
+      const dh = L.canvasH;
+      canvas.style.height = dh + 'px';
+      canvas.width = dw * dpr;
+      canvas.height = dh * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawBackground() {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    }
+
+    function drawChrome() {
+      const g = ctx;
+      g.save();
+
+      const s = L.sram;
+      g.fillStyle = 'rgba(255,255,255,0.03)';
+      g.strokeStyle = 'rgba(255,255,255,0.18)';
+      g.lineWidth = 1.5;
+      g.fillRect(s.x, s.y, s.w, s.h);
+      g.strokeRect(s.x, s.y, s.w, s.h);
+      g.fillStyle = '#e2e4eb';
+      g.font = '12px Inter, system-ui, sans-serif';
+      g.fillText('SRAM (on-chip)', s.x + 8, s.y + 14);
+
+      g.font = '9px Inter, system-ui, sans-serif';
+      g.fillStyle = '#555a6e';
+      const slotNames = ['Operand A', 'Operand B', 'Result'];
+      for (let i = 0; i < 3; i++) {
+        const sa = L.sramSlotAreas[i];
+        if (!sramSlots[i]) {
+          g.fillText(slotNames[i], sa.x + 2, sa.y + sa.h / 2 + 3);
+        }
+        g.strokeStyle = 'rgba(255,255,255,0.05)';
+        g.lineWidth = 0.5;
+        g.strokeRect(sa.x, sa.y, sa.w, sa.h);
+      }
+
+      for (let i = 0; i < NUM_LANES; i++) {
+        const lx = L.laneXs[i];
+        g.strokeStyle = 'rgba(108,140,255,0.25)';
+        g.setLineDash([4, 6]);
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(lx, L.laneTop);
+        g.lineTo(lx, L.laneBot);
+        g.stroke();
+        g.setLineDash([]);
+      }
+
+      const h = L.hbm;
+      g.fillStyle = 'rgba(255,255,255,0.015)';
+      g.fillRect(h.x, h.y, h.w, h.h);
+      g.strokeStyle = 'rgba(255,255,255,0.18)';
+      g.lineWidth = 1.5;
+      g.strokeRect(h.x, h.y, h.w, h.h);
+      g.fillStyle = '#e2e4eb';
+      g.font = '13px Inter, system-ui, sans-serif';
+      g.fillText('HBM (GPU DRAM)', h.x + 10, h.y + 16);
+
+      g.font = '12px Inter, system-ui, sans-serif';
+      for (let i = 0; i < L.secBoxes.length; i++) {
+        const sb = L.secBoxes[i];
+        g.setLineDash([6, 6]);
+        g.strokeStyle = 'rgba(255,255,255,0.14)';
+        g.lineWidth = 1;
+        g.strokeRect(sb.x, sb.y, sb.w, sb.h);
+        g.setLineDash([]);
+        g.fillStyle = '#8b8fa3';
+        g.fillText(sectionLabels[i], sb.x + 6, sb.y + 14);
+      }
+
+      const wLabels = ['weights for Query', 'weights for Key', 'weights for Value'];
+      const wIds = ['Wq', 'Wk', 'Wv'];
+      g.font = '10px Inter, system-ui, sans-serif';
+      for (let i = 0; i < 3; i++) {
+        const bx = L.pos[wIds[i]].x - 5;
+        const by = L.wDashTop;
+        g.fillStyle = '#8b8fa3';
+        g.fillText(wLabels[i], bx, L.wLabelY + 11);
+        g.setLineDash([4, 4]);
+        g.strokeStyle = 'rgba(255,255,255,0.12)';
+        g.lineWidth = 1;
+        g.strokeRect(bx, by, L.wBoxW, L.wBoxH);
+        g.setLineDash([]);
+      }
+
+      g.restore();
+    }
+
+    function drawMatrix(mat) {
+      if (!mat.inHBM) return;
+      const pos = L.pos[mat.id];
+      if (!pos) return;
+
+      const g = ctx;
+      g.save();
+      const step = L.tile + GAP;
+      const gw = gridPx(mat.w);
+      const gh = gridPx(mat.h);
+      const alphaArr = stableAlpha[mat.id];
+
+      g.fillStyle = darkenHex(mat.color, 0.15);
+      g.fillRect(pos.x - 0.5, pos.y - 0.5, gw + 1, gh + 1);
+
+      for (let r = 0; r < mat.h; r++) {
+        for (let c = 0; c < mat.w; c++) {
+          const idx = r * mat.w + c;
+          const state = mat.squareState[idx];
+          if (state === 0) continue;
+
+          const tx = pos.x + c * step;
+          const ty = pos.y + r * step;
+          let alpha = alphaArr ? alphaArr[idx] : 0.85;
+          if (state === 2) alpha *= 0.3;
+
+          g.fillStyle = hexRgba(mat.color, alpha);
+          g.fillRect(tx, ty, L.tile, L.tile);
+        }
+      }
+
+      g.fillStyle = '#cfd2dd';
+      g.font = '11px Inter, system-ui, sans-serif';
+      g.fillText(mat.id + ' ' + mathDim[mat.id], pos.x, pos.y - 3);
+      g.restore();
+    }
+
+    function drawSRAMContents() {
+      const g = ctx;
+      for (let si = 0; si < 3; si++) {
+        const content = sramSlots[si];
+        if (!content) continue;
+        const area = L.sramSlotAreas[si];
+
+        const maxStepW = (area.w - 2) / content.w;
+        const maxStepH = (area.h - 14) / content.h;
+        const maxStep = Math.min(maxStepW, maxStepH);
+        const sg = maxStep >= 4 ? 1 : (maxStep >= 2 ? 0.5 : 0);
+        const st = Math.max(0.6, Math.min(maxStep - sg, 6));
+        const step = st + sg;
+        const gw = content.w * step - sg;
+        const gh = content.h * step - sg;
+        const ox = area.x + (area.w - gw) / 2;
+        const oy = area.y + 14 + (area.h - 14 - gh) / 2;
+
+        g.save();
+        g.fillStyle = '#cfd2dd';
+        g.font = 'bold 9px Inter, system-ui, sans-serif';
+        g.fillText(content.id + ' (' + content.w + '\u00d7' + content.h + ')', area.x + 2, area.y + 10);
+
+        for (let r = 0; r < content.h; r++) {
+          for (let c = 0; c < content.w; c++) {
+            if (!content.tiles[r * content.w + c]) continue;
+            g.fillStyle = hexRgba(content.color, 0.85);
+            g.fillRect(ox + c * step, oy + r * step, st, st);
+          }
+        }
+        g.restore();
+      }
+    }
+
+    function drawSRAMFlashEffect() {
+      if (!sramFlash.active) return;
+      const elapsed = performance.now() - sramFlash.start;
+      const dur = sramFlash.dur;
+      const t = elapsed / dur;
+      if (t >= 1) return;
+
+      let alpha = 0;
+      if (t < 0.35) alpha = Math.sin(t / 0.35 * Math.PI) * 0.7;
+      else if (t >= 0.5 && t < 0.85) alpha = Math.sin((t - 0.5) / 0.35 * Math.PI) * 0.7;
+
+      if (alpha > 0.01) {
+        const g = ctx;
+        g.save();
+        g.strokeStyle = 'rgba(108,140,255,' + alpha + ')';
+        g.lineWidth = 3;
+        g.shadowColor = 'rgba(108,140,255,' + alpha + ')';
+        g.shadowBlur = 15;
+        const s = L.sram;
+        g.strokeRect(s.x - 1, s.y - 1, s.w + 2, s.h + 2);
+        g.restore();
+      }
+    }
+
+    function drawLaneTraffic() {
+      const g = ctx;
+      const now = performance.now();
+      for (const tr of activeTransfers) {
+        if (tr.done || tr.inTransit <= 0) continue;
+
+        const perLane = Math.ceil(tr.inTransit / NUM_LANES);
+        const tSize = Math.max(2, Math.min(L.tile * 0.7, 5));
+        const tGap = tSize * 0.6;
+        const step = tSize + tGap;
+        const laneLen = L.laneBot - L.laneTop;
+
+        for (let lane = 0; lane < NUM_LANES; lane++) {
+          const lx = L.laneXs[lane];
+          const maxVis = Math.min(perLane, Math.floor(laneLen / step));
+          const speed = tr.direction === 'toSRAM' ? -0.15 : 0.15;
+          const offset = ((now * speed) % step + step) % step;
+
+          for (let t = 0; t < maxVis; t++) {
+            let y;
+            if (tr.direction === 'toSRAM') {
+              y = L.laneBot - step - t * step - offset;
+            } else {
+              y = L.laneTop + t * step + offset;
+            }
+            if (y < L.laneTop || y + tSize > L.laneBot) continue;
+            g.fillStyle = hexRgba(tr.color, 0.9);
+            g.fillRect(lx - tSize / 2, y, tSize, tSize);
+          }
+        }
+      }
+    }
+
+    function updateTransfers() {
+      const now = performance.now();
+      activeTransfers = activeTransfers.filter(function (tr) {
+        if (tr.done) return false;
+        const p = Math.min(1, (now - tr.startTime) / tr.duration);
+        const n = tr.totalSquares;
+
+        if (tr.direction === 'toSRAM') {
+          const sent = Math.floor(Math.min(p / 0.85, 1) * n);
+          const mat = matrices[tr.srcMat];
+          for (let i = 0; i < n; i++) {
+            const c = tr.srcCol + (i % tr.bw);
+            const r = tr.srcRow + Math.floor(i / tr.bw);
+            const idx = r * mat.w + c;
+            if (idx < mat.squareState.length) {
+              mat.squareState[idx] = (i < sent) ? 2 : 1;
+            }
+          }
+          const arrived = Math.floor(Math.max(0, (p - 0.15) / 0.85) * n);
+          const slot = sramSlots[tr.slotIdx];
+          if (slot) {
+            for (let i = 0; i < n; i++) {
+              slot.tiles[i] = (i < arrived) ? 1 : 0;
+            }
+          }
+          tr.inTransit = Math.max(0, sent - arrived);
+        } else {
+          const departed = Math.floor(Math.min(p / 0.85, 1) * n);
+          const slot = sramSlots[tr.slotIdx];
+          if (slot) {
+            for (let i = 0; i < n; i++) {
+              slot.tiles[i] = (i >= departed) ? 1 : 0;
+            }
+          }
+          const arrived = Math.floor(Math.max(0, (p - 0.15) / 0.85) * n);
+          const mat = matrices[tr.dstMat];
+          for (let i = 0; i < arrived && i < n; i++) {
+            const c = tr.dstCol + (i % tr.bw);
+            const r = tr.dstRow + Math.floor(i / tr.bw);
+            const idx = r * mat.w + c;
+            if (idx < mat.squareState.length) {
+              mat.squareState[idx] = 1;
+            }
+          }
+          tr.inTransit = Math.max(0, departed - arrived);
+        }
+        return true;
+      });
+    }
+
+    function waitMs(ms) {
+      if (skipAnimation) return Promise.resolve();
+      const gen = runGen;
+      return new Promise(function (resolve, reject) {
+        setTimeout(function () {
+          if (runGen !== gen) reject(new Error('cancelled'));
+          else resolve();
+        }, ms);
+      });
+    }
+
+    async function transferToSRAM(srcMat, col0, row0, bw, bh, slotIdx) {
+      const n = bw * bh;
+      sramSlots[slotIdx] = {
+        id: srcMat, color: matrices[srcMat].color,
+        w: bw, h: bh, tiles: new Uint8Array(n)
+      };
+
+      if (skipAnimation) {
+        sramSlots[slotIdx].tiles.fill(1);
+        totalTransferred += n;
+        markTallyDirty();
+        return;
+      }
+
+      const t = T();
+      const tr = {
+        direction: 'toSRAM',
+        srcMat: srcMat, srcCol: col0, srcRow: row0,
+        bw: bw, bh: bh, slotIdx: slotIdx,
+        color: matrices[srcMat].color,
+        startTime: performance.now(),
+        duration: t.xfer,
+        totalSquares: n,
+        inTransit: 0,
+        done: false
+      };
+      activeTransfers.push(tr);
+
+      await waitMs(t.xfer);
+
+      tr.done = true;
+      const mat = matrices[srcMat];
+      for (let i = 0; i < n; i++) {
+        const c = col0 + (i % bw);
+        const r = row0 + Math.floor(i / bw);
+        const idx = r * mat.w + c;
+        if (idx < mat.squareState.length) mat.squareState[idx] = 1;
+      }
+      const slot = sramSlots[slotIdx];
+      if (slot) slot.tiles.fill(1);
+
+  totalTransferred += n;
+  markTallyDirty();
+}
+
+async function transferToHBM(dstMat, col0, row0, bw, bh, slotIdx) {
+      const n = bw * bh;
+      matrices[dstMat].inHBM = true;
+
+      if (skipAnimation) {
+        const mat = matrices[dstMat];
+        for (let i = 0; i < n; i++) {
+          const c = col0 + (i % bw);
+          const r = row0 + Math.floor(i / bw);
+          const idx = r * mat.w + c;
+          if (idx < mat.squareState.length) mat.squareState[idx] = 1;
+        }
+        sramSlots[slotIdx] = null;
+        totalTransferred += n;
+        markTallyDirty();
+        return;
+      }
+
+      const t = T();
+      const tr = {
+        direction: 'toHBM',
+        dstMat: dstMat, dstCol: col0, dstRow: row0,
+        bw: bw, bh: bh, slotIdx: slotIdx,
+        color: matrices[dstMat].color,
+        startTime: performance.now(),
+        duration: t.xfer,
+        totalSquares: n,
+        inTransit: 0,
+        done: false
+      };
+      activeTransfers.push(tr);
+
+      await waitMs(t.xfer);
+
+      tr.done = true;
+      const mat = matrices[dstMat];
+      for (let i = 0; i < n; i++) {
+        const c = col0 + (i % bw);
+        const r = row0 + Math.floor(i / bw);
+        const idx = r * mat.w + c;
+        if (idx < mat.squareState.length) mat.squareState[idx] = 1;
+      }
+      sramSlots[slotIdx] = null;
+
+      totalTransferred += n;
+      markTallyDirty();
+    }
+
+    function fillSRAMSlot(slotIdx, label, color, w, h) {
+      sramSlots[slotIdx] = {
+        id: label, color: color, w: w, h: h,
+        tiles: new Uint8Array(w * h).fill(1)
+      };
+      markTallyDirty();
+    }
+
+    function clearSRAMSlot(slotIdx) {
+      sramSlots[slotIdx] = null;
+      markTallyDirty();
+    }
+
+    async function computeFlash(msg) {
+      setStatus(msg);
+      if (skipAnimation) return;
+      const t = T();
+      sramFlash = { active: true, start: performance.now(), dur: t.compute };
+      await waitMs(t.compute);
+      sramFlash.active = false;
+    }
+
+    function updateTally() {
+      let hbm = 0, sram = 0;
+      for (const m of Object.values(matrices)) {
+        if (!m.inHBM) continue;
+        for (let i = 0; i < m.squareState.length; i++) {
+          if (m.squareState[i] >= 1) hbm++;
+        }
+      }
+      for (const sl of sramSlots) {
+        if (!sl) continue;
+        for (let i = 0; i < sl.tiles.length; i++) {
+          if (sl.tiles[i]) sram++;
+        }
+      }
+      tallyHBM = hbm;
+      tallySRAM = sram;
+    }
+
+function drawTally() {
+  const g = ctx;
+  g.save();
+  g.font = 'bold 14px "SF Mono","Fira Code",Consolas,monospace';
+
+  var s = L.sram;
+  g.textAlign = 'left';
+  g.fillStyle = '#22d3ee';
+  g.fillText('SRAM  ' + tallySRAM.toLocaleString() + ' squares', s.x, s.y - 10);
+
+  g.textAlign = 'right';
+  g.fillStyle = '#fb923c';
+  g.fillText('Transferred: ' + totalTransferred.toLocaleString(), s.x + s.w, s.y - 10);
+
+  var h = L.hbm;
+  g.textAlign = 'right';
+  g.fillStyle = '#4ade80';
+  g.fillText('HBM  ' + tallyHBM.toLocaleString() + ' squares', h.x + h.w - 8, h.y + 15);
+
+  g.restore();
+}
+
+    const phases = [
+      { label: 'Initial State', action: phaseInitial },
+      { label: 'Projection of Q, K, V', action: phaseProjection },
+      { label: 'Compute S = QK\u1d40/\u221ad', action: phaseScores },
+      { label: 'Softmax: P = softmax(S)', action: phaseSoftmax },
+      { label: 'Output: O = PV', action: phaseOutput }
+    ];
+
+    async function phaseInitial() {
+      setStatus('Initial matrices in HBM: X, Wq, Wk, Wv');
+      markTallyDirty();
+    }
+
+    async function phaseProjection() {
+      const pairs = [['Wq', 'Q'], ['Wk', 'K'], ['Wv', 'V']];
+      for (const [wId, outId] of pairs) {
+        setStatus('Loading ' + wId + ' to SRAM');
+        await transferToSRAM(wId, 0, 0, HS, HS, 1);
+
+        for (let b = 0; b < NUM_BLOCKS; b++) {
+          const col0 = b * BLOCK_ROWS;
+
+          setStatus('Loading X block ' + (b + 1) + '/' + NUM_BLOCKS + ' to SRAM');
+          await transferToSRAM('X', col0, 0, BLOCK_ROWS, HS, 0);
+
+          await computeFlash('Computing ' + outId + '[' + col0 + ':' + (col0 + BLOCK_ROWS) + '] = X_block \u00b7 ' + wId);
+
+          fillSRAMSlot(2, outId + '_blk', colors[outId], BLOCK_ROWS, HS);
+          await waitMs(T().pause);
+
+          setStatus('Writing ' + outId + ' block ' + (b + 1) + '/' + NUM_BLOCKS + ' to HBM');
+          await transferToHBM(outId, col0, 0, BLOCK_ROWS, HS, 2);
+
+          clearSRAMSlot(0);
+          await waitMs(T().pause);
+        }
+
+        clearSRAMSlot(1);
+      }
+    }
+
+    async function phaseScores() {
+      for (let i = 0; i < NUM_BLOCKS; i++) {
+        setStatus('Loading Q block ' + (i + 1) + '/' + NUM_BLOCKS);
+        await transferToSRAM('Q', i * BLOCK_ROWS, 0, BLOCK_ROWS, HS, 0);
+
+        for (let j = 0; j < NUM_BLOCKS; j++) {
+          setStatus('Loading K block ' + (j + 1) + '/' + NUM_BLOCKS);
+          await transferToSRAM('K', j * BLOCK_ROWS, 0, BLOCK_ROWS, HS, 1);
+
+          await computeFlash('S[' + (i * BLOCK_ROWS) + ':' + ((i + 1) * BLOCK_ROWS) + ', ' +
+            (j * BLOCK_ROWS) + ':' + ((j + 1) * BLOCK_ROWS) + '] = Q\u00b7K\u1d40/\u221ad');
+
+          fillSRAMSlot(2, 'S_tile', colors.S, BLOCK_ROWS, BLOCK_ROWS);
+          await waitMs(T().pause);
+
+          setStatus('Writing S tile to HBM');
+          await transferToHBM('S', i * BLOCK_ROWS, j * BLOCK_ROWS, BLOCK_ROWS, BLOCK_ROWS, 2);
+
+          clearSRAMSlot(1);
+          await waitMs(T().pause);
+        }
+
+        clearSRAMSlot(0);
+      }
+    }
+
+    async function phaseSoftmax() {
+      for (let i = 0; i < NUM_BLOCKS; i++) {
+        for (let j = 0; j < NUM_BLOCKS; j++) {
+          const col0 = i * BLOCK_ROWS, row0 = j * BLOCK_ROWS;
+
+          setStatus('Loading S tile [' + col0 + ':' + (col0 + BLOCK_ROWS) + ', ' + row0 + ':' + (row0 + BLOCK_ROWS) + ']');
+          await transferToSRAM('S', col0, row0, BLOCK_ROWS, BLOCK_ROWS, 0);
+
+          await computeFlash('softmax S[' + col0 + ':' + (col0 + BLOCK_ROWS) + ', ' + row0 + ':' + (row0 + BLOCK_ROWS) + ']');
+
+          fillSRAMSlot(2, 'P_tile', colors.P, BLOCK_ROWS, BLOCK_ROWS);
+          await waitMs(T().pause);
+
+          setStatus('Writing P tile to HBM');
+          await transferToHBM('P', col0, row0, BLOCK_ROWS, BLOCK_ROWS, 2);
+
+          clearSRAMSlot(0);
+          await waitMs(T().pause);
+        }
+      }
+    }
+
+    async function phaseOutput() {
+      for (let i = 0; i < NUM_BLOCKS; i++) {
+        const oCol = i * BLOCK_ROWS;
+        fillSRAMSlot(2, 'O_acc', colors.O, BLOCK_ROWS, HS);
+
+        for (let k = 0; k < NUM_BLOCKS; k++) {
+          const kCol = k * BLOCK_ROWS;
+
+          setStatus('Loading P tile [' + oCol + ':' + (oCol + BLOCK_ROWS) + ', ' + kCol + ':' + (kCol + BLOCK_ROWS) + ']');
+          await transferToSRAM('P', oCol, kCol, BLOCK_ROWS, BLOCK_ROWS, 0);
+
+          setStatus('Loading V block ' + (k + 1) + '/' + NUM_BLOCKS);
+          await transferToSRAM('V', kCol, 0, BLOCK_ROWS, HS, 1);
+
+          await computeFlash('O[' + oCol + ':' + (oCol + BLOCK_ROWS) + '] += P_tile \u00b7 V_blk');
+
+          clearSRAMSlot(0);
+          clearSRAMSlot(1);
+          await waitMs(T().pause);
+        }
+
+        setStatus('Writing O block ' + (i + 1) + '/' + NUM_BLOCKS + ' to HBM');
+        await transferToHBM('O', oCol, 0, BLOCK_ROWS, HS, 2);
+        await waitMs(T().pause);
+      }
+
+      setStatus('Done. Standard attention completed.');
+    }
+
+    let statusText = 'Ready';
+    let phaseIndex = 0;
+    let playing = false;
+
+    function setStatus(msg) {
+      statusText = msg;
+      document.getElementById('statusText').textContent = msg;
+    }
+
+    function setPhaseLabel() {
+      const p = phases[Math.min(phaseIndex, phases.length - 1)];
+      document.getElementById('phaseLabel').textContent = 'Phase ' + (phaseIndex + 1) + ': ' + p.label;
+    }
+
+    function resetState() {
+      runGen++;
+      initMatrices();
+      sramSlots = [null, null, null];
+      sramFlash = { active: false, start: 0, dur: 0 };
+      activeTransfers = [];
+      totalTransferred = 0;
+      phaseIndex = 0;
+      setPhaseLabel();
+      setStatus('Ready');
+      markTallyDirty();
+    }
+
+    async function runPhase(idx) {
+      if (idx < 0 || idx >= phases.length) return;
+      phaseIndex = idx;
+      setPhaseLabel();
+      await phases[idx].action();
+    }
+
+    async function playFromCurrent() {
+      playing = true;
+      updateButtons();
+      try {
+        for (let i = phaseIndex; i < phases.length; i++) {
+          if (!playing) break;
+          await runPhase(i);
+          if (!playing) break;
+          phaseIndex = i + 1;
+        }
+      } catch (e) {
+        if (e.message !== 'cancelled') throw e;
+      }
+      playing = false;
+      updateButtons();
+    }
+
+    function updateButtons() {
+      document.getElementById('btnPlay').disabled = playing || phaseIndex >= phases.length;
+      document.getElementById('btnPause').disabled = !playing;
+      document.getElementById('btnStep').disabled = playing || phaseIndex >= phases.length;
+      document.getElementById('btnBack').disabled = playing || phaseIndex <= 0;
+    }
+
+    document.getElementById('btnPlay').addEventListener('click', function () {
+      if (phaseIndex >= phases.length) return;
+      playFromCurrent();
+    });
+
+    document.getElementById('btnPause').addEventListener('click', function () {
+      playing = false;
+      setStatus('Paused');
+      updateButtons();
+    });
+
+    document.getElementById('btnStep').addEventListener('click', async function () {
+      if (phaseIndex >= phases.length) return;
+      playing = true;
+      updateButtons();
+      try {
+        await runPhase(phaseIndex);
+        phaseIndex++;
+      } catch (e) {
+        if (e.message !== 'cancelled') throw e;
+      }
+      playing = false;
+      updateButtons();
+    });
+
+    document.getElementById('btnBack').addEventListener('click', function () {
+      const target = Math.max(0, phaseIndex - 1);
+      resetState();
+      skipAnimation = true;
+      (async function () {
+        try {
+          for (let i = 0; i < target; i++) {
+            await runPhase(i);
+            phaseIndex = i + 1;
+          }
+        } catch (e) {
+          if (e.message !== 'cancelled') throw e;
+        }
+        skipAnimation = false;
+        updateButtons();
+      })();
+    });
+
+    document.getElementById('btnReset').addEventListener('click', function () {
+      playing = false;
+      resetState();
+      updateButtons();
+    });
+
+    document.getElementById('btnFast').addEventListener('click', function () {
+      speedMode = 'fast';
+      document.getElementById('btnFast').classList.add('speed-active');
+      document.getElementById('btnDetailed').classList.remove('speed-active');
+    });
+
+    document.getElementById('btnDetailed').addEventListener('click', function () {
+      speedMode = 'detailed';
+      document.getElementById('btnDetailed').classList.add('speed-active');
+      document.getElementById('btnFast').classList.remove('speed-active');
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (playing) document.getElementById('btnPause').click();
+        else document.getElementById('btnPlay').click();
+      }
+      if (e.key === 'ArrowRight') document.getElementById('btnStep').click();
+      if (e.key === 'ArrowLeft') document.getElementById('btnBack').click();
+    });
+
+let tallyDirty = true;
+function markTallyDirty() { tallyDirty = true; }
+
+function drawScene() {
+  drawBackground();
+  updateTransfers();
+  if (tallyDirty || activeTransfers.length > 0) {
+    updateTally();
+    tallyDirty = false;
+  }
+  drawTally();
+  drawChrome();
+  Object.values(matrices).forEach(drawMatrix);
+  drawSRAMContents();
+  drawLaneTraffic();
+  drawSRAMFlashEffect();
+  requestAnimationFrame(drawScene);
+}
+
+    computeLayout();
+    resizeCanvas();
+    initMatrices();
+    resetState();
+    drawScene();
+  </script>
+</body>
+
+</html>
