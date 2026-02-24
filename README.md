@@ -16,3 +16,5 @@ Researches too lazy to do by myself
 
 ## Learning
 * 🌳 [dense layer visualization](learn/dense-layer.html)
+* [Standard Attention](learn/flash-attention/standard-attention.html) — HBM/SRAM data movement visualization
+* [Flash Attention](learn/flash-attention/flash-attention.html) — Dao et al. 2022, S and P never touch HBM
