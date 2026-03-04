@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic IDs — Residual Quantization for Compact Embeddings</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #242836;
+  --border: #2e3345;
+  --text: #e2e4eb;
+  --text-muted: #8b8fa3;
+  --accent: #6c8cff;
+  --accent-glow: rgba(108,140,255,0.15);
+  --green: #4ade80;
+  --orange: #fb923c;
+  --red: #f87171;
+  --purple: #a78bfa;
+  --cyan: #22d3ee;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+header {
+  padding: 56px 0 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+header p {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+section {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+section:last-of-type { border-bottom: none; }
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+p, li { font-size: 0.95rem; color: var(--text); margin-bottom: 12px; }
+ul { padding-left: 20px; margin-bottom: 16px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.card-highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 24px var(--accent-glow);
+}
+
+.formula {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin: 16px 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow-x: auto;
+  line-height: 1.9;
+}
+
+.formula .label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.hl-blue { color: var(--accent); font-weight: 600; }
+.hl-green { color: var(--green); font-weight: 600; }
+.hl-orange { color: var(--orange); font-weight: 600; }
+.hl-red { color: var(--red); font-weight: 600; }
+.hl-purple { color: var(--purple); font-weight: 600; }
+.hl-cyan { color: var(--cyan); font-weight: 600; }
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .columns { grid-template-columns: 1fr; }
+  header h1 { font-size: 1.8rem; }
+}
+
+.note {
+  background: rgba(108,140,255,0.06);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.comparison-table th {
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.comparison-table th:first-child { border-radius: 8px 0 0 0; }
+.comparison-table th:last-child { border-radius: 0 8px 0 0; }
+.comparison-table tr:last-child td { border-bottom: none; }
+
+/* ===== Embedding Table Visual ===== */
+.emb-table {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 20px 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.emb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emb-id {
+  min-width: 80px;
+  color: var(--orange);
+  font-weight: 600;
+  text-align: right;
+}
+
+.emb-arrow { color: var(--text-muted); }
+
+.emb-vec {
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.emb-cell {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  min-width: 44px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.emb-dots {
+  padding: 8px 0;
+  text-align: center;
+  color: var(--text-muted);
+  letter-spacing: 0.2em;
+}
+
+.param-box {
+  display: inline-block;
+  background: rgba(251,146,60,0.1);
+  border: 1px solid rgba(251,146,60,0.25);
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin: 16px 0;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.param-box.good {
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.25);
+}
+
+/* ===== Codebook Diagram ===== */
+.cb-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+
+.cb-box {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+  min-width: 120px;
+  flex: 1;
+  max-width: 160px;
+}
+
+.cb-box .cb-label {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.cb-box .cb-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cb-box.l1 { border-color: var(--accent); }
+.cb-box.l1 .cb-label { color: var(--accent); }
+.cb-box.l2 { border-color: var(--purple); }
+.cb-box.l2 .cb-label { color: var(--purple); }
+.cb-box.l3 { border-color: var(--cyan); }
+.cb-box.l3 .cb-label { color: var(--cyan); }
+.cb-box.l4 { border-color: var(--green); }
+.cb-box.l4 .cb-label { color: var(--green); }
+
+.cb-plus {
+  display: flex;
+  align-items: center;
+  font-size: 1.4rem;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.rq-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.rq-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface2);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.rq-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ===== Interactive Canvas Section ===== */
+.target-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.target-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.target-btn:hover {
+  border-color: var(--accent);
+  background: rgba(108,140,255,0.08);
+}
+
+.target-btn.active {
+  border-color: var(--accent);
+  background: rgba(108,140,255,0.15);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.canvas-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin: 16px 0;
+}
+
+.canvas-wrap canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.level-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.level-stepper button {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.level-stepper button:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.level-stepper button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.level-indicator {
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 180px;
+  text-align: center;
+  color: var(--accent);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .info-grid { grid-template-columns: 1fr; }
+}
+
+.info-grid .card { margin-bottom: 0; padding: 20px; }
+
+.sid-display {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 8px;
+}
+
+.recon-lines {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+
+.recon-lines .recon-row { display: flex; gap: 8px; align-items: baseline; }
+.recon-lines .recon-op { min-width: 14px; text-align: center; color: var(--text-muted); }
+
+.error-val {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+/* ===== Error Chart ===== */
+.error-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.error-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-bar-label {
+  min-width: 80px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.error-bar-track {
+  flex: 1;
+  height: 24px;
+  background: var(--surface2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.error-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  min-width: 3px;
+}
+
+.error-bar-val {
+  min-width: 60px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ===== Stacking Canvas ===== */
+.stack-canvas-wrap {
+  margin: 20px 0;
+}
+
+.stack-canvas-wrap canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+footer {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Semantic IDs</h1>
+  <p>How Residual Quantization breaks giant embedding tables into compact, hierarchical codebooks — dramatically reducing parameters while preserving representation quality.</p>
+</header>
+
+<!-- ========== SECTION 1: THE PROBLEM ========== -->
+<section>
+  <h2>The Problem: Giant Embedding Tables</h2>
+  <div class="card">
+    <p>In recommendation and search systems, every item (video, product, document) is assigned a <strong>unique embedding vector</strong>. The model learns one dense vector per item:</p>
+
+    <div class="emb-table">
+      <div class="emb-row">
+        <span class="emb-id">Item 1</span>
+        <span class="emb-arrow">&rarr;</span>
+        <div class="emb-vec">
+          <span class="emb-cell">0.12</span><span class="emb-cell">-0.34</span><span class="emb-cell">0.56</span><span class="emb-cell">0.91</span><span class="emb-cell">-0.23</span><span class="emb-cell" style="color:var(--text-muted);">...</span><span class="emb-cell">0.78</span>
+        </div>
+      </div>
+      <div class="emb-row">
+        <span class="emb-id">Item 2</span>
+        <span class="emb-arrow">&rarr;</span>
+        <div class="emb-vec">
+          <span class="emb-cell">-0.23</span><span class="emb-cell">0.45</span><span class="emb-cell">0.67</span><span class="emb-cell">-0.18</span><span class="emb-cell">0.52</span><span class="emb-cell" style="color:var(--text-muted);">...</span><span class="emb-cell">-0.89</span>
+        </div>
+      </div>
+      <div class="emb-row">
+        <span class="emb-id">Item 3</span>
+        <span class="emb-arrow">&rarr;</span>
+        <div class="emb-vec">
+          <span class="emb-cell">0.34</span><span class="emb-cell">-0.56</span><span class="emb-cell">0.78</span><span class="emb-cell">0.41</span><span class="emb-cell">-0.67</span><span class="emb-cell" style="color:var(--text-muted);">...</span><span class="emb-cell">0.12</span>
+        </div>
+      </div>
+      <div class="emb-dots">&#8942;</div>
+      <div class="emb-row">
+        <span class="emb-id">Item N</span>
+        <span class="emb-arrow">&rarr;</span>
+        <div class="emb-vec">
+          <span class="emb-cell">-0.45</span><span class="emb-cell">0.67</span><span class="emb-cell">-0.89</span><span class="emb-cell">0.15</span><span class="emb-cell">0.33</span><span class="emb-cell" style="color:var(--text-muted);">...</span><span class="emb-cell">0.34</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="param-box">
+      <span class="hl-orange">Parameters</span> = N &times; D = 1,000,000 &times; 256 = <strong>256,000,000</strong>
+    </div>
+
+    <div class="note">
+      With 1 million items and 256-dimensional embeddings, the ID embedding table alone contains <strong>256 million parameters</strong> &mdash; often the single largest component of the model. This scales linearly with the catalog size and cannot generalize to new or unseen items.
+    </div>
+  </div>
+</section>
+
+<!-- ========== SECTION 2: THE IDEA ========== -->
+<section>
+  <h2>The Idea: Hierarchical Codebooks</h2>
+
+  <div class="card card-highlight">
+    <h3>Residual Quantization (RQ)</h3>
+    <p>Instead of storing a unique vector for every item, we approximate each embedding as a <strong>sum of shared codebook vectors</strong>, selected level by level:</p>
+
+    <div class="cb-row">
+      <div class="cb-box l1"><div class="cb-label">C<sub>1</sub></div><div class="cb-sub">K entries<br>Coarse</div></div>
+      <span class="cb-plus">+</span>
+      <div class="cb-box l2"><div class="cb-label">C<sub>2</sub></div><div class="cb-sub">K entries<br>Medium</div></div>
+      <span class="cb-plus">+</span>
+      <div class="cb-box l3"><div class="cb-label">C<sub>3</sub></div><div class="cb-sub">K entries<br>Fine</div></div>
+      <span class="cb-plus">+</span>
+      <div class="cb-box l4"><div class="cb-label">C<sub>4</sub></div><div class="cb-sub">K entries<br>Very Fine</div></div>
+    </div>
+
+    <p>The process works by quantizing the <strong>residual error</strong> at each level:</p>
+
+    <div class="rq-steps">
+      <div class="rq-step">
+        <span class="rq-step-num" style="background:rgba(108,140,255,0.18);color:var(--accent);">1</span>
+        <span>Quantize <strong>x</strong> to nearest entry in C<sub>1</sub> &rarr; <span class="hl-blue">c<sub>1</sub></span>, &nbsp; residual <strong>r<sub>1</sub></strong> = x &minus; c<sub>1</sub></span>
+      </div>
+      <div class="rq-step">
+        <span class="rq-step-num" style="background:rgba(167,139,250,0.18);color:var(--purple);">2</span>
+        <span>Quantize <strong>r<sub>1</sub></strong> to nearest entry in C<sub>2</sub> &rarr; <span class="hl-purple">c<sub>2</sub></span>, &nbsp; residual <strong>r<sub>2</sub></strong> = r<sub>1</sub> &minus; c<sub>2</sub></span>
+      </div>
+      <div class="rq-step">
+        <span class="rq-step-num" style="background:rgba(34,211,238,0.18);color:var(--cyan);">3</span>
+        <span>Quantize <strong>r<sub>2</sub></strong> to nearest entry in C<sub>3</sub> &rarr; <span class="hl-cyan">c<sub>3</sub></span>, &nbsp; residual <strong>r<sub>3</sub></strong> = r<sub>2</sub> &minus; c<sub>3</sub></span>
+      </div>
+      <div class="rq-step">
+        <span class="rq-step-num" style="background:rgba(74,222,128,0.18);color:var(--green);">4</span>
+        <span>Quantize <strong>r<sub>3</sub></strong> to nearest entry in C<sub>4</sub> &rarr; <span class="hl-green">c<sub>4</sub></span>, &nbsp; residual <strong>r<sub>4</sub></strong> = r<sub>3</sub> &minus; c<sub>4</sub></span>
+      </div>
+    </div>
+
+    <div class="formula">
+      <span class="label">Reconstruction</span>
+      <strong>x&#x0302;</strong> = <span class="hl-blue">c<sub>1</sub></span> + <span class="hl-purple">c<sub>2</sub></span> + <span class="hl-cyan">c<sub>3</sub></span> + <span class="hl-green">c<sub>4</sub></span> &nbsp; &approx; &nbsp; x
+      <br><br>
+      <span class="label">Semantic ID (a tuple of codebook indices)</span>
+      ID(x) = (<span class="hl-blue">idx<sub>1</sub></span>, <span class="hl-purple">idx<sub>2</sub></span>, <span class="hl-cyan">idx<sub>3</sub></span>, <span class="hl-green">idx<sub>4</sub></span>)
+    </div>
+
+    <div class="columns">
+      <div>
+        <div class="param-box" style="width:100%;text-align:center;">
+          <span class="hl-orange">Traditional</span><br>
+          N &times; D = <strong>256,000,000</strong>
+        </div>
+      </div>
+      <div>
+        <div class="param-box good" style="width:100%;text-align:center;">
+          <span class="hl-green">Semantic ID</span><br>
+          L &times; K &times; D = 4 &times; 256 &times; 256 = <strong>262,144</strong>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:8px;margin-bottom:0;">
+      <strong class="hl-green">977&times; fewer parameters</strong> &mdash; shared codebooks replace per-item storage.
+    </p>
+  </div>
+</section>
+
+<!-- ========== SECTION 3: INTERACTIVE RQ ========== -->
+<section>
+  <h2>Interactive: Step-by-Step Residual Quantization</h2>
+  <p>Watch how each codebook level refines the approximation in 2D. Choose a target vector and step through the quantization levels.</p>
+
+  <div class="target-btns" id="targetBtns"></div>
+
+  <div class="canvas-wrap">
+    <canvas id="rqCanvas" width="900" height="440"></canvas>
+  </div>
+
+  <div class="level-stepper">
+    <button id="btnPrev" onclick="goStep(currentStep-1)">&laquo; Prev</button>
+    <div class="level-indicator" id="levelIndicator">Level 1 / 4</div>
+    <button id="btnNext" onclick="goStep(currentStep+1)">Next &raquo;</button>
+  </div>
+
+  <div class="info-grid">
+    <div class="card">
+      <h3>Semantic ID</h3>
+      <div class="sid-display" id="sidDisplay">( _ , _ , _ , _ )</div>
+    </div>
+    <div class="card">
+      <h3>Reconstruction</h3>
+      <div class="recon-lines" id="reconDisplay"></div>
+    </div>
+    <div class="card">
+      <h3>Error &Vert;r&Vert;</h3>
+      <div class="error-val" id="errorDisplay" style="color:var(--red);">-</div>
+    </div>
+  </div>
+
+  <div class="card" id="levelExplain" style="margin-top:8px;"></div>
+</section>
+
+<!-- ========== SECTION 4: WHY IT WORKS ========== -->
+<section>
+  <h2>Why It Works: Residual Decomposition</h2>
+
+  <div class="card">
+    <h3>Vector Stacking: Each Level Adds Finer Detail</h3>
+    <p>The reconstruction is built by summing the codebook vectors chosen at each level. Each successive vector is smaller, capturing finer residual details.</p>
+    <div class="stack-canvas-wrap">
+      <canvas id="stackCanvas" width="900" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Error Reduction by Level</h3>
+    <p>Each codebook level reduces the remaining quantization error, with the coarsest level capturing the most information:</p>
+    <div class="error-chart" id="errorChart"></div>
+  </div>
+</section>
+
+<!-- ========== SECTION 5: SUMMARY ========== -->
+<section>
+  <h2>Summary</h2>
+
+  <div class="card">
+    <table class="comparison-table">
+      <thead>
+        <tr><th></th><th>Traditional Embedding</th><th>Semantic ID (RQ)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Representation</strong></td><td>One unique D-dim vector per item</td><td>Tuple of L codebook indices per item</td></tr>
+        <tr><td><strong>Parameters</strong></td><td>N &times; D (scales with catalog)</td><td>L &times; K &times; D (fixed, shared)</td></tr>
+        <tr><td><strong>Example</strong></td><td>1M &times; 256 = 256M params</td><td style="color:var(--green);">4 &times; 256 &times; 256 = 262K params</td></tr>
+        <tr><td><strong>New items</strong></td><td>Requires retraining</td><td>Encode with existing codebooks</td></tr>
+        <tr><td><strong>Structure</strong></td><td>Flat, no hierarchy</td><td>Hierarchical: coarse &rarr; fine</td></tr>
+        <tr><td><strong>Storage per item</strong></td><td>D floats (256 &times; 4 = 1024 bytes)</td><td>L integers (4 &times; 1 = 4 bytes)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note" style="border-left-color:var(--green);background:rgba(74,222,128,0.06);margin-top:20px;">
+      <strong>Key insight:</strong> Semantic IDs trade a small amount of reconstruction error for massive parameter savings and a meaningful hierarchical structure. The first codebook index captures coarse similarity (genre, category), while deeper levels encode finer distinctions.
+    </div>
+  </div>
+</section>
+
+<footer>
+  Interactive explainer for Semantic IDs via Residual Quantization.
+</footer>
+
+</div>
+
+<script>
+// ====== DATA ======
+const LEVEL_COLORS = ['#6c8cff', '#a78bfa', '#22d3ee', '#4ade80'];
+const LEVEL_NAMES = ['Level 1 — Coarse', 'Level 2 — Medium', 'Level 3 — Fine', 'Level 4 — Very Fine'];
+const TARGET_COLOR = '#fb923c';
+const ERROR_COLOR = '#f87171';
+
+const CODEBOOKS = [
+  [[1.5,1.5],[1.5,5.0],[1.5,8.5],[5.0,2.0],[5.0,7.0],[8.5,1.5],[8.5,5.0],[8.5,8.5]],
+  [[-1.5,-0.5],[-1.0,0.5],[-0.5,-1.0],[0.0,0.5],[0.5,-0.5],[0.8,-0.3],[1.0,0.8],[1.5,0.0]],
+  [[-0.3,-0.1],[-0.2,0.15],[-0.1,-0.2],[0.0,0.1],[0.1,-0.15],[0.15,0.05],[0.25,-0.1],[0.3,0.2]],
+  [[-0.08,-0.06],[-0.05,0.04],[-0.03,-0.07],[0.0,0.05],[0.04,-0.06],[0.06,-0.03],[0.07,0.03],[0.08,-0.01]]
+];
+
+const PRESETS = [
+  { label: 'Item A', vec: [7.2, 4.5] },
+  { label: 'Item B', vec: [4.8, 6.8] },
+  { label: 'Item C', vec: [2.2, 2.8] },
+  { label: 'Item D', vec: [6.0, 8.0] }
+];
+
+// ====== ALGORITHM ======
+function dist(a, b) { return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2); }
+function vecLen(v) { return Math.sqrt(v[0]**2 + v[1]**2); }
+
+function findNearest(vec, centroids) {
+  let best = 0, bestD = Infinity;
+  centroids.forEach(function(c, i) {
+    var d = dist(vec, c);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  return { index: best, centroid: centroids[best], distance: bestD };
+}
+
+function runRQ(target) {
+  var levels = [];
+  var residual = [target[0], target[1]];
+  var reconstruction = [0, 0];
+  for (var l = 0; l < CODEBOOKS.length; l++) {
+    var r = findNearest(residual, CODEBOOKS[l]);
+    var newRes = [residual[0] - r.centroid[0], residual[1] - r.centroid[1]];
+    reconstruction = [reconstruction[0] + r.centroid[0], reconstruction[1] + r.centroid[1]];
+    levels.push({
+      inputResidual: [residual[0], residual[1]],
+      selectedIndex: r.index,
+      selectedCentroid: [r.centroid[0], r.centroid[1]],
+      outputResidual: [newRes[0], newRes[1]],
+      reconstruction: [reconstruction[0], reconstruction[1]],
+      error: vecLen(newRes)
+    });
+    residual = [newRes[0], newRes[1]];
+  }
+  return levels;
+}
+
+// ====== STATE ======
+var target = PRESETS[0].vec;
+var rqResult = runRQ(target);
+var currentStep = 0;
+var activePreset = 0;
+
+// ====== CANVAS DRAWING ======
+function getViewport(step) {
+  if (step <= 0) return { xMin: -0.5, xMax: 10.5, yMin: -0.5, yMax: 10.5 };
+
+  var points = [[target[0], target[1]]];
+  for (var l = 0; l < step; l++) {
+    points.push(rqResult[l].reconstruction);
+  }
+  if (step >= 1) points.push([0,0]);
+
+  if (step < CODEBOOKS.length) {
+    var offset = step === 0 ? [0,0] : rqResult[step-1].reconstruction;
+    CODEBOOKS[step].forEach(function(c) {
+      points.push([offset[0]+c[0], offset[1]+c[1]]);
+    });
+  }
+
+  var xMin=1e9, xMax=-1e9, yMin=1e9, yMax=-1e9;
+  points.forEach(function(p) {
+    if (p[0]<xMin) xMin=p[0]; if (p[0]>xMax) xMax=p[0];
+    if (p[1]<yMin) yMin=p[1]; if (p[1]>yMax) yMax=p[1];
+  });
+
+  if (step <= 1) return { xMin: -0.5, xMax: 10.5, yMin: -0.5, yMax: 10.5 };
+
+  var dx = xMax - xMin, dy = yMax - yMin;
+  var range = Math.max(dx, dy, 0.1);
+  var pad = range * 0.35 + 0.05;
+  var cx = (xMin+xMax)/2, cy = (yMin+yMax)/2;
+  var half = range/2 + pad;
+  return { xMin: cx-half, xMax: cx+half, yMin: cy-half, yMax: cy+half };
+}
+
+function gridStep(range) {
+  if (range > 6) return 2;
+  if (range > 3) return 1;
+  if (range > 1) return 0.5;
+  if (range > 0.4) return 0.1;
+  if (range > 0.15) return 0.05;
+  return 0.02;
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, lw) {
+  var dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 2) return;
+  var headLen = Math.min(12, len*0.3);
+  var angle = Math.atan2(dy, dx);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw || 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2 - headLen*0.7*Math.cos(angle), y2 - headLen*0.7*Math.sin(angle));
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - headLen*Math.cos(angle-0.4), y2 - headLen*Math.sin(angle-0.4));
+  ctx.lineTo(x2 - headLen*Math.cos(angle+0.4), y2 - headLen*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawStar(ctx, cx, cy, r, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (var i = 0; i < 5; i++) {
+    var a = -Math.PI/2 + i*2*Math.PI/5;
+    var ox = cx + r*Math.cos(a), oy = cy + r*Math.sin(a);
+    if (i===0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+    var ia = a + Math.PI/5;
+    ctx.lineTo(cx + r*0.4*Math.cos(ia), cy + r*0.4*Math.sin(ia));
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawCanvas() {
+  var canvas = document.getElementById('rqCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = 900, H = 440;
+  var vp = getViewport(currentStep);
+  var rx = vp.xMax - vp.xMin, ry = vp.yMax - vp.yMin;
+  var pad = 45, pW = W - 2*pad, pH = H - 2*pad;
+
+  function toX(d) { return pad + ((d - vp.xMin) / rx) * pW; }
+  function toY(d) { return H - pad - ((d - vp.yMin) / ry) * pH; }
+
+  ctx.fillStyle = '#0f1117';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#141720';
+  ctx.fillRect(pad, pad, pW, pH);
+
+  var gs = gridStep(Math.max(rx, ry));
+  ctx.strokeStyle = '#1e2230';
+  ctx.lineWidth = 0.5;
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = '10px monospace';
+  var decimals = gs < 0.05 ? 2 : gs < 0.5 ? 1 : 0;
+  for (var gx = Math.ceil(vp.xMin/gs)*gs; gx <= vp.xMax; gx += gs) {
+    var px = toX(gx);
+    ctx.beginPath(); ctx.moveTo(px, pad); ctx.lineTo(px, H-pad); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText(gx.toFixed(decimals), px, H - pad + 14);
+  }
+  for (var gy = Math.ceil(vp.yMin/gs)*gs; gy <= vp.yMax; gy += gs) {
+    var py = toY(gy);
+    ctx.beginPath(); ctx.moveTo(pad, py); ctx.lineTo(W-pad, py); ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(gy.toFixed(decimals), pad - 6, py + 4);
+  }
+
+  ctx.strokeStyle = '#2e3345';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(pad, pad, pW, pH);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pad, pad, pW, pH);
+  ctx.clip();
+
+  // Codebook centroids for the current step's level
+  var cbLevel = currentStep;
+  if (cbLevel < CODEBOOKS.length) {
+    var offset = cbLevel === 0 ? [0,0] : rqResult[cbLevel-1].reconstruction;
+    var nearestIdx = rqResult[cbLevel].selectedIndex;
+    CODEBOOKS[cbLevel].forEach(function(c, i) {
+      var cx = offset[0]+c[0], cy = offset[1]+c[1];
+      var isNearest = (i === nearestIdx);
+      var px2 = toX(cx), py2 = toY(cy);
+
+      ctx.beginPath();
+      ctx.arc(px2, py2, isNearest ? 8 : 5, 0, Math.PI*2);
+      ctx.fillStyle = isNearest ? LEVEL_COLORS[cbLevel] : '#3a3f52';
+      ctx.fill();
+
+      if (isNearest) {
+        ctx.strokeStyle = LEVEL_COLORS[cbLevel];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px2, py2, 14, 0, Math.PI*2);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = isNearest ? LEVEL_COLORS[cbLevel] : '#5a5f72';
+      ctx.font = (isNearest ? 'bold ' : '') + '10px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('c'+i, px2 + (isNearest ? 18 : 8), py2 - 6);
+    });
+  }
+
+  // Reconstruction arrows for completed levels
+  var prevPt = [0, 0];
+  for (var l = 0; l <= currentStep && l < rqResult.length; l++) {
+    var nextPt = rqResult[l].reconstruction;
+    drawArrow(ctx, toX(prevPt[0]), toY(prevPt[1]), toX(nextPt[0]), toY(nextPt[1]), LEVEL_COLORS[l], 2.5);
+    ctx.beginPath();
+    ctx.arc(toX(nextPt[0]), toY(nextPt[1]), 5, 0, Math.PI*2);
+    ctx.fillStyle = LEVEL_COLORS[l];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    prevPt = nextPt;
+  }
+
+  // Error dashed line
+  if (currentStep >= 0 && currentStep < rqResult.length) {
+    var recon = rqResult[currentStep].reconstruction;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = ERROR_COLOR;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(toX(recon[0]), toY(recon[1]));
+    ctx.lineTo(toX(target[0]), toY(target[1]));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Target star
+  drawStar(ctx, toX(target[0]), toY(target[1]), 11, TARGET_COLOR);
+  ctx.fillStyle = TARGET_COLOR;
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('x = [' + target[0].toFixed(1) + ', ' + target[1].toFixed(1) + ']', toX(target[0]) + 16, toY(target[1]) - 10);
+
+  ctx.restore();
+
+  // Canvas title
+  ctx.fillStyle = '#e2e4eb';
+  ctx.font = 'bold 13px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(currentStep < CODEBOOKS.length ? LEVEL_NAMES[currentStep] : 'Final Reconstruction', pad + 8, pad - 10);
+
+  if (currentStep >= 2) {
+    var zoom = Math.round(11 / Math.max(rx, ry));
+    if (zoom > 1) {
+      ctx.fillStyle = '#8b8fa3';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(zoom + '\u00d7 zoom', W - pad - 4, pad - 10);
+    }
+  }
+
+  // Legend
+  var ly = H - 18;
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  var lx = pad;
+  drawStar(ctx, lx + 6, ly, 6, TARGET_COLOR);
+  ctx.fillStyle = '#8b8fa3';
+  ctx.fillText('Target x', lx + 18, ly + 4);
+  lx += 80;
+  for (var ll = 0; ll <= currentStep && ll < 4; ll++) {
+    ctx.fillStyle = LEVEL_COLORS[ll];
+    ctx.fillRect(lx, ly - 4, 10, 10);
+    ctx.fillStyle = '#8b8fa3';
+    ctx.fillText('L' + (ll+1), lx + 14, ly + 4);
+    lx += 42;
+  }
+  if (currentStep >= 0) {
+    ctx.setLineDash([4,3]);
+    ctx.strokeStyle = ERROR_COLOR;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 18, ly); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#8b8fa3';
+    ctx.fillText('Error', lx + 22, ly + 4);
+  }
+}
+
+// ====== STACKING CANVAS ======
+function drawStackCanvas() {
+  var canvas = document.getElementById('stackCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = 900, H = 220;
+  ctx.fillStyle = '#0f1117';
+  ctx.fillRect(0, 0, W, H);
+
+  var barH = 30, gap = 14, startY = 24;
+  var maxVal = Math.max(Math.abs(target[0]), Math.abs(target[1])) * 1.2;
+  var barAreaW = W - 260;
+  var labelX = 120;
+  var barX = 140;
+
+  function valToW(v) { return (v / maxVal) * (barAreaW / 2); }
+  var centerX = barX + barAreaW / 2;
+
+  // Dim labels
+  ctx.fillStyle = '#8b8fa3';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('dim 0', centerX - barAreaW * 0.25, startY - 4);
+  ctx.fillText('dim 1', centerX + barAreaW * 0.25, startY - 4);
+
+  // Zero line
+  ctx.strokeStyle = '#2e3345';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(centerX, startY);
+  ctx.lineTo(centerX, startY + (barH + gap) * 5 + 10);
+  ctx.stroke();
+
+  for (var l = 0; l < rqResult.length; l++) {
+    var y = startY + l * (barH + gap);
+    var c = rqResult[l].selectedCentroid;
+    var color = LEVEL_COLORS[l];
+
+    ctx.fillStyle = color;
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('c\u2081\u2082\u2083\u2084'[l+1] ? 'c' + '\u2081\u2082\u2083\u2084'[l] : 'c' + (l+1), labelX - 10, y + barH / 2 + 4);
+
+    // Dim 0 bar
+    var w0 = valToW(c[0]);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.7;
+    if (w0 >= 0) {
+      ctx.fillRect(centerX, y, w0, barH);
+    } else {
+      ctx.fillRect(centerX + w0, y, -w0, barH);
+    }
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(w0 >= 0 ? centerX : centerX + w0, y, Math.abs(w0), barH);
+
+    // Dim 1 bar (shifted to right half)
+    var w1 = valToW(c[1]);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.4;
+    if (w1 >= 0) {
+      ctx.fillRect(centerX, y, w1, barH);
+    } else {
+      ctx.fillRect(centerX + w1, y, -w1, barH);
+    }
+    ctx.globalAlpha = 1;
+
+    // Value labels
+    ctx.fillStyle = '#e2e4eb';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('[' + c[0].toFixed(2) + ', ' + c[1].toFixed(2) + ']', barX + barAreaW + 10, y + barH / 2 + 4);
+  }
+
+  // Sum line
+  var sumY = startY + 4 * (barH + gap) - 4;
+  ctx.strokeStyle = '#e2e4eb';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(labelX - 20, sumY);
+  ctx.lineTo(barX + barAreaW + 5, sumY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Reconstruction
+  var ry = sumY + 10;
+  var recon = rqResult[rqResult.length - 1].reconstruction;
+  ctx.fillStyle = '#e2e4eb';
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('\u2211 = x\u0302', labelX - 10, ry + barH / 2 + 4);
+
+  var rw0 = valToW(recon[0]);
+  ctx.fillStyle = '#e2e4eb';
+  ctx.globalAlpha = 0.3;
+  ctx.fillRect(rw0 >= 0 ? centerX : centerX + rw0, ry, Math.abs(rw0), barH);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#e2e4eb';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rw0 >= 0 ? centerX : centerX + rw0, ry, Math.abs(rw0), barH);
+
+  ctx.fillStyle = '#e2e4eb';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('[' + recon[0].toFixed(2) + ', ' + recon[1].toFixed(2) + ']  \u2248  x = [' + target[0].toFixed(1) + ', ' + target[1].toFixed(1) + ']', barX + barAreaW + 10, ry + barH / 2 + 4);
+}
+
+// ====== ERROR CHART ======
+function renderErrorChart() {
+  var container = document.getElementById('errorChart');
+  var initialError = dist(target, [0, 0]);
+  var errors = [{ label: 'Initial', val: initialError, color: ERROR_COLOR }];
+  for (var l = 0; l < rqResult.length; l++) {
+    errors.push({ label: 'After L' + (l + 1), val: rqResult[l].error, color: LEVEL_COLORS[l] });
+  }
+  var maxErr = errors[0].val;
+  var html = '';
+  errors.forEach(function(e) {
+    var pct = Math.max(1, (e.val / maxErr) * 100);
+    html += '<div class="error-bar-row">';
+    html += '<span class="error-bar-label" style="color:' + e.color + '">' + e.label + '</span>';
+    html += '<div class="error-bar-track"><div class="error-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + e.color + ';"></div></div>';
+    html += '<span class="error-bar-val">' + e.val.toFixed(4) + '</span>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ====== UI ======
+function updateInfo() {
+  // Semantic ID
+  var parts = [];
+  for (var l = 0; l < CODEBOOKS.length; l++) {
+    if (l <= currentStep) {
+      parts.push('<span style="color:' + LEVEL_COLORS[l] + '">' + rqResult[l].selectedIndex + '</span>');
+    } else {
+      parts.push('<span style="color:var(--text-muted)">_</span>');
+    }
+  }
+  document.getElementById('sidDisplay').innerHTML = '( ' + parts.join(' , ') + ' )';
+
+  // Reconstruction
+  var reconHtml = '';
+  var ops = [' ', '+', '+', '+'];
+  for (var l2 = 0; l2 <= currentStep && l2 < rqResult.length; l2++) {
+    var c = rqResult[l2].selectedCentroid;
+    var op = l2 === 0 ? '&nbsp;' : '+';
+    reconHtml += '<div class="recon-row"><span class="recon-op">' + op + '</span>';
+    reconHtml += '<span style="color:' + LEVEL_COLORS[l2] + '">[' + c[0].toFixed(2) + ', ' + c[1].toFixed(2) + ']</span>';
+    reconHtml += ' <span style="color:var(--text-muted);font-size:0.75rem;">c' + (l2+1) + '</span></div>';
+  }
+  if (currentStep >= 0) {
+    var recon = rqResult[Math.min(currentStep, rqResult.length - 1)].reconstruction;
+    reconHtml += '<div class="recon-row" style="border-top:1px solid var(--border);padding-top:4px;margin-top:4px;"><span class="recon-op">=</span>';
+    reconHtml += '<span style="color:var(--text);font-weight:600;">[' + recon[0].toFixed(2) + ', ' + recon[1].toFixed(2) + ']</span></div>';
+  }
+  document.getElementById('reconDisplay').innerHTML = reconHtml;
+
+  // Error
+  var err = rqResult[Math.min(currentStep, rqResult.length - 1)].error;
+  document.getElementById('errorDisplay').innerHTML = err.toFixed(4);
+  document.getElementById('errorDisplay').style.color = currentStep >= 3 ? 'var(--green)' : 'var(--red)';
+
+  // Level indicator
+  document.getElementById('levelIndicator').textContent =
+    currentStep < CODEBOOKS.length ? LEVEL_NAMES[currentStep] : 'Complete';
+  document.getElementById('levelIndicator').style.color = currentStep < CODEBOOKS.length ? LEVEL_COLORS[currentStep] : 'var(--green)';
+
+  // Buttons
+  document.getElementById('btnPrev').disabled = currentStep <= 0;
+  document.getElementById('btnNext').disabled = currentStep >= CODEBOOKS.length - 1;
+
+  // Explanation
+  var explain = document.getElementById('levelExplain');
+  if (currentStep < CODEBOOKS.length) {
+    var lvl = rqResult[currentStep];
+    explain.innerHTML = '<h3 style="color:' + LEVEL_COLORS[currentStep] + '">' + LEVEL_NAMES[currentStep] + '</h3>' +
+      '<p>Quantizing the ' + (currentStep === 0 ? 'original vector <strong>x</strong>' : 'residual <strong>r<sub>' + currentStep + '</sub></strong> = [' + lvl.inputResidual[0].toFixed(4) + ', ' + lvl.inputResidual[1].toFixed(4) + ']') + ' against ' + CODEBOOKS[currentStep].length + ' codebook entries.</p>' +
+      '<div class="formula">' +
+      '<span class="label">Nearest centroid</span>' +
+      '<span style="color:' + LEVEL_COLORS[currentStep] + '">c<sub>' + (currentStep+1) + '</sub></span> = codebook entry <strong>' + lvl.selectedIndex + '</strong> = [' + lvl.selectedCentroid[0].toFixed(2) + ', ' + lvl.selectedCentroid[1].toFixed(2) + ']' +
+      '<br><br><span class="label">Remaining residual</span>' +
+      '<span class="hl-red">r<sub>' + (currentStep+1) + '</sub></span> = [' + lvl.outputResidual[0].toFixed(4) + ', ' + lvl.outputResidual[1].toFixed(4) + '] &nbsp; &Vert;r&Vert; = ' + lvl.error.toFixed(4) +
+      '</div>';
+  } else {
+    explain.innerHTML = '<h3 style="color:var(--green)">Quantization Complete</h3>' +
+      '<p>All 4 levels quantized. The semantic ID fully encodes this vector with just 4 integers.</p>';
+  }
+}
+
+function goStep(n) {
+  if (n < 0) n = 0;
+  if (n > CODEBOOKS.length - 1) n = CODEBOOKS.length - 1;
+  currentStep = n;
+  drawCanvas();
+  updateInfo();
+}
+
+function setTarget(vec, presetIdx) {
+  target = [vec[0], vec[1]];
+  rqResult = runRQ(target);
+  activePreset = presetIdx;
+  currentStep = 0;
+  buildTargetBtns();
+  drawCanvas();
+  updateInfo();
+  drawStackCanvas();
+  renderErrorChart();
+}
+
+function randomTarget() {
+  var v = [1 + Math.random() * 8, 1 + Math.random() * 8];
+  v[0] = Math.round(v[0] * 10) / 10;
+  v[1] = Math.round(v[1] * 10) / 10;
+  setTarget(v, -1);
+}
+
+function buildTargetBtns() {
+  var html = '';
+  PRESETS.forEach(function(p, i) {
+    html += '<button class="target-btn' + (i === activePreset ? ' active' : '') + '" onclick="setTarget([' + p.vec[0] + ',' + p.vec[1] + '],' + i + ')">' + p.label + ': [' + p.vec[0] + ', ' + p.vec[1] + ']</button>';
+  });
+  html += '<button class="target-btn' + (activePreset === -1 ? ' active' : '') + '" onclick="randomTarget()">Random</button>';
+  document.getElementById('targetBtns').innerHTML = html;
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'l') goStep(currentStep + 1);
+  else if (e.key === 'ArrowLeft' || e.key === 'h') goStep(currentStep - 1);
+});
+
+// ====== INIT ======
+buildTargetBtns();
+drawCanvas();
+updateInfo();
+drawStackCanvas();
+renderErrorChart();
+</script>
+</body>
+</html>
