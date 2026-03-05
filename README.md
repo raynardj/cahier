@@ -18,3 +18,4 @@ Researches too lazy to do by myself
 * 🌳 [dense layer visualization](learn/dense-layer.html)
 * [Standard Attention](learn/flash-attention/standard-attention.html) — HBM/SRAM data movement visualization
 * [Flash Attention](learn/flash-attention/flash-attention.html) — Dao et al. 2022, S and P never touch HBM
+* [Semantic IDs](learn/semantic-id/semantic-id.html) — Residual Quantization for Compact Embeddings
